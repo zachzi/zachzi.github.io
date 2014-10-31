@@ -55,18 +55,24 @@
         <h1>Awesome Test App!</h1>
     </header>
     <div class="padding options"><b class="options-title">Open Options</b>
-        <input id="multiSelect" type="checkbox">Multi select (default: single select) <br>
-        <input id="webviewLink" type="checkbox">Get webview links (default: download links)
+        <div>
+            <input id="multiSelect" type="checkbox">Multi select (default: single select)
+        </div>
+        <div>
+            <input id="webviewLink" type="checkbox">Get webview links (default: download links)
+        </div>
     </div>
     <div class="padding options"><b class="options-title">Save Options</b>
         <div>
             <input id="url-upload" type="radio" name="saving-input">Upload from URL
             <input id="form-upload"type="radio" name="saving-input">Form upload
         </div>
-        <form class="padding">
+        <div>
             <input id="file" name="file" type="file" />
-        </form>
-        <input id="url-text" type="text" />
+        </div>
+        <div>
+            <input id="url-text" type="text" />
+        </div>
     </div>
     <div class="padding-buttons">
         <div id="open" class="button button-blue">Open</div>
