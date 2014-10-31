@@ -26,16 +26,22 @@
                 padding: 10px 10px;
             }
             
-            .padding-buttons {
+            .padding-input {
                 padding-top: 10px;
             }
             
             .options {
                 display: inline-block;
+                height: 100%;
                 border-style: solid;
                 border-width: 2px;
                 border-color: #094AB1;
                 border-radius: 10px;
+            }
+            
+            .options-container {
+                display: inline-block;
+                height: 100px;
             }
             
             .options-title {
@@ -54,27 +60,29 @@
     <header>
         <h1>Awesome Test App!</h1>
     </header>
-    <div class="padding options"><b class="options-title">Open Options</b>
-        <div>
-            <input id="multiSelect" type="checkbox">Multi select (default: single select)
+    <div class="options-container">
+        <div class="padding options"><b class="options-title">Open Options</b>
+            <div>
+                <input id="multiSelect" type="checkbox">Multi select (default: single select)
+            </div>
+            <div>
+                <input id="webviewLink" type="checkbox">Get webview links (default: download links)
+            </div>
         </div>
-        <div>
-            <input id="webviewLink" type="checkbox">Get webview links (default: download links)
+        <div class="padding options"><b class="options-title">Save Options</b>
+            <div>
+                <input id="url-upload" type="radio" name="saving-input">Upload from URL
+                <input id="form-upload"type="radio" name="saving-input">Form upload
+            </div>
+            <div class="padding-input">
+                <input id="file" name="file" type="file" />
+            </div>
+            <div class="padding-input">
+                <input id="url-text" type="text" />
+            </div>
         </div>
     </div>
-    <div class="padding options"><b class="options-title">Save Options</b>
-        <div>
-            <input id="url-upload" type="radio" name="saving-input">Upload from URL
-            <input id="form-upload"type="radio" name="saving-input">Form upload
-        </div>
-        <div>
-            <input id="file" name="file" type="file" />
-        </div>
-        <div>
-            <input id="url-text" type="text" />
-        </div>
-    </div>
-    <div class="padding-buttons">
+    <div class="padding-input">
         <div id="open" class="button button-blue">Open</div>
         <div id="save" class="button button-blue">Save</div>
     </div>
