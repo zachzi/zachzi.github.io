@@ -65,7 +65,7 @@
                 <input id="multiSelect" type="checkbox">Multi select (default: single select)
             </div>
             <div>
-                <input id="webviewLink" type="checkbox">Get webview links (default: download links)
+                <input id="downloadLink" type="checkbox">Get download links (default: webview links)
             </div>
         </div>
         <div class="padding options"><b class="options-title">Save Options</b>
@@ -93,10 +93,10 @@
         window.onload = function(){
             $("#open").click(function(){
                 var multiSelectChecked = $("#multiSelect")[0].checked;
-                var webviewChecked = $("#webviewLink")[0].checked;
+                var downloadChecked = $("#downloadLink")[0].checked;
                 
                 var options = {
-                    linkType: webviewChecked ? "webViewLink" : "downloadLink",
+                    linkType: downloadChecked ? "downloadLink" : "webViewLink",
                     multiSelect: multiSelectChecked,
                     success: function(files) {
                         log("OneDrive.open - success");
