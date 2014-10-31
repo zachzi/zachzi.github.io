@@ -79,7 +79,10 @@
                 <input id="file" name="file" type="file" />
             </div>
             <div class="padding-input">
-                <input id="url-text" type="text" />
+                <input id="url-text" type="text" value="http://mydomain/cat.jpg"/> URL
+            </div>
+            <div class="padding-input">
+                <input id="filename" type="text" value="foo.bar"/> File name
             </div>
         </div>
     </div>
@@ -97,7 +100,7 @@
                 var options = {
                     linkType: webviewChecked ? "webViewLink" : "downloadLink",
                     multiSelect: multiSelectChecked,
-                    success: function(files){
+                    success: function(files) {
                         log("OneDrive.open - success");
                         for (var i = 0; i < files.length; i++) {
                             log("File #" + i);
@@ -114,7 +117,7 @@
                             }
                         }
                     },
-                    cancel: function(){
+                    cancel: function() {
                         log("OneDrive.open - user cancel");
                     }
                 };
@@ -123,19 +126,34 @@
             });
 
             $("#save").click(function(){
+                var file;
+                var urlInput = $("#url-upload")[0];
+                var nameInput = $("#file-name")[0];
+                
+                if($(urlInput.checked) {
+                    file = urlInput.value;
+                }
+                else if($("#form-upload")[0].checked) {
+                    file = "file";
+                }
+                else {
+                    alert("Provide a file to save and try again!");
+                    return;
+                }
+
                 var options = {
-                    file: "file",
-                    fileName: "test.txt",
-                    success: function(){
+                    file: file,
+                    fileName: $("#filename")[0].value,
+                    success: function() {
                         log("OneDrive.save - upload succeeded!");
                     },
-                    cancel: function(){
+                    cancel: function() {
                         log("OneDrive.save - user cancel");
                     },
-                    progress: function(percent){
+                    progress: function(percent) {
                         log("OneDrive.save - progress " + percent + "%");
                     },
-                    error: function(errorMessage){
+                    error: function(errorMessage) {
                         log("OneDrive.save - error " + errorMessage);
                     }
                 };
