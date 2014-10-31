@@ -80,7 +80,7 @@
                 <input id="url-text" type="text" value="http://mydomain/cat.jpg"/> URL
             </div>
             <div class="padding-input">
-                <input id="filename" type="text" value="foo.bar"/> File name
+                <input id="file-name" type="text" value="foo.bar"/> File name
             </div>
         </div>
     </div>
@@ -141,7 +141,7 @@
 
                 var options = {
                     file: file,
-                    fileName: $("#filename")[0].value,
+                    fileName: nameInput.value,
                     success: function() {
                         log("OneDrive.save - upload succeeded!");
                     },
