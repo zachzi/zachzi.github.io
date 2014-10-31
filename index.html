@@ -22,8 +22,14 @@
                 background-color: #255fb9 !important;
             }
             
-            .button_padding {
+            .padding {
                 padding: 10px 10px;
+            }
+            
+            .border {
+                border-style: solid;
+                border-width: 2px;
+                border-color: #094AB1;
             }
             
             #JsOutputDiv {
@@ -36,26 +42,31 @@
     <header>
         <h1>Awesome Test App!</h1>
     </header>
-    <div>
-        <input id="multiSelect" type="checkbox">Multi select (default: single select)
-    </div>
-    <div>
-        <input id="webviewLink" type="checkbox">Get webview links (default: download links)
+    <div class="padding border">Open Options:
+        <div>
+            <input id="multiSelect" type="checkbox"><b>Multi select</b> (default: single select)
+        </div>
+        <div>
+            <input id="webviewLink" type="checkbox"><b>Get webview links</b> (default: download links)
+        </div>
     </div>
     <div>
         <div id="open" class="button button-blue">Open</div>
         <div id="save" class="button button-blue">Save</div>
     </div>
-    <form class="button_padding">
+    <form class="padding">
         <input id="file" name="file" type="file" />
     </form>
     <div id="JsOutputDiv"></div>
     <script>
         window.onload = function(){
             $("#open").click(function(){
+                var multiSelectChecked = $("#multiSelect")[0].checked;
+                var webviewChecked = $("#webviewLink")[0].checked;
+                
                 var options = {
-                    linkType: "webViewLink",
-                    multiSelect: true,
+                    linkType: webviewChecked ? "webViewLink" : "downloadLink",
+                    multiSelect: multiSelectChecked,
                     success: function(files){
                         log("OneDrive.open - success");
                         for (var i = 0; i < files.length; i++) {
