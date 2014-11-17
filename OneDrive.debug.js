@@ -5502,17 +5502,17 @@ var FilePickerOperation = null;
 
             switch (op._props[FILEDIALOG_PARAM_RESOURCETYPE]) {
                 case FILEDIALOG_PARAM_RESOURCETYPE_FILE:
-                    scope += "file";
+                    scope += "file|";
                     break;
                 case FILEDIALOG_PARAM_RESOURCETYPE_FOLDER:
-                    scope += "folder";
+                    scope += "folder|";
                     break;
                 default:
-                    scope += "file";
+                    scope += "file|";
                     break;
             }
 
-            scope += ("|" + op._props[FILEDIALOG_PARAM_SELECT] === FILEDIALOG_PARAM_SELECT_SINGLE ? FILEDIALOG_PARAM_SELECT_SINGLE : FILEDIALOG_PARAM_SELECT_MULTI);
+            scope += (op._props[FILEDIALOG_PARAM_SELECT] === FILEDIALOG_PARAM_SELECT_SINGLE) ? FILEDIALOG_PARAM_SELECT_SINGLE : FILEDIALOG_PARAM_SELECT_MULTI;
 
             if (op._props[FILEDIALOG_PARAM_LINKTYPE]) {
                 scope += ("|" + op._props[FILEDIALOG_PARAM_LINKTYPE]);
@@ -6864,6 +6864,7 @@ wl_app._locale = "en";
         };
 
         wl_app._settings.init("INT");
+
 
         wl_app[FILEDIALOG_PARAM_PICKER_SCRIPT] = "wl.skydrivepicker.debug.js";
 
