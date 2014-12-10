@@ -5582,7 +5582,7 @@ var FilePickerOperation = null;
 
             var resourceId = response[AK_RESOURCEID];
             if (resourceId == null) {
-                op.complete(createErrorResponse(ERROR_REQUEST_FAILED, "Did not get expected resource id."));
+                op._onComplete(createErrorResponse(ERROR_REQUEST_FAILED, "Did not get expected resource id."));
                 return;
             }
 
