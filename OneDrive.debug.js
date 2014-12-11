@@ -1827,7 +1827,7 @@ UploadOperation.prototype = {
  * Where RESOURCE_ID is the id of the item that the user has granted the application
  * access to.
  */
-var scopeResponsePattern = new RegExp("^\\w+\\.\\w+:\\w+\\|\\w+|\\w+:([\\d\\w]+\\!\\d+)$");
+var scopeResponsePattern = new RegExp("^\\w+\\.\\w+:\\w+\\|\\w+\\|\\w+:([\\d\\w]+\\!\\d+)$");
 
 function stringTrim(value) {
     return value.replace(/^\s+|\s+$/g, '');
