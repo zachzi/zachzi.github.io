@@ -6750,7 +6750,7 @@ wl_app._locale = "en";
             }
         };
 
-        wl_app._settings.init("DF");
+        wl_app._settings.init("PROD");
 
 
         wl_app[FILEDIALOG_PARAM_PICKER_SCRIPT] = "wl.skydrivepicker.debug.js";
