@@ -1404,27 +1404,29 @@ function prepareXDRRequest(request) {
         useVroomApi = params[API_PARAM_VROOMAPI],
         url = appendUrlParameters(request._url, {'ts': (new Date().getTime())}),
         token = wl_app.getAccessTokenForApi(),
-        reqBody,
+        requestBody = null,
         xdrMethod;
 
     params[API_SUPPRESS_REDIRECTS] = "true";
-    // Flash(built with Adobe Flex) and Firefox 3.5/3.6 does not return response content when http status code is not 200.
-    // We use suppress_response_codes to indicate this so that the server will always return 200.
-    params[API_SUPPRESS_RESPONSE_CODES] = "true";
 
-    if (token != null) {
+    // The access token should not be passed to the vroom API.
+    if (token != null && !useVroomApi) {
         params[AK_ACCESS_TOKEN] = token;
     }
 
     if (method === HTTP_METHOD_GET || method === HTTP_METHOD_DELETE) {
-        reqBody = null;
         xdrMethod = HTTP_METHOD_GET;
-        url += "&" + serializeParameters(params);        
+        url += "&" + serializeParameters(params);
     }
     else {
-        requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application" + (jsonBody ? "json" : "/x-www-form-urlencoded")});
-        reqBody = (jsonBody || useVroomApi) ? JSON.stringify(jsonBody) : serializeParameters(params);
+        if (jsonBody || useVroomApi) {
+            requestBody = JSON.stringify(jsonBody || {});
+        } else {
+            requestBody = serializeParameters(params);
+        }
+
         xdrMethod = HTTP_METHOD_POST;
+        requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application" + (jsonBody ? "json" : "/x-www-form-urlencoded") });
     }
 
     url += "&method=" + method;
@@ -1434,7 +1436,7 @@ function prepareXDRRequest(request) {
         method: xdrMethod,
         requestHeaders: requestHeaders,
         responseHeaders: responseHeaders,
-        body: reqBody
+        body: requestBody
     };
 }
 
@@ -2629,9 +2631,11 @@ function serializeParameters(dict) {
     var serialized = "";
     if (dict != null) {
         for (var key in dict) {
-            var separator = (serialized.length == 0) ? "" : "&";
-            var value = dict[key];
-            serialized += separator + encodeURIComponent(key) + "=" + encodeURIComponent(stringifyParamValue(value));
+            if (dict.hasOwnProperty(key)) {
+                var separator = (serialized.length === 0) ? "" : "&";
+                var value = dict[key];
+                serialized += separator + encodeURIComponent(key) + "=" + encodeURIComponent(stringifyParamValue(value));
+            }
         }
     }
 
@@ -5163,14 +5167,17 @@ function normalizeResponseStatus(status) {
  * The Web version of executeApiRequest() method.
  */
 function executeApiRequest(request) {
-    if (sendAPIRequestViaJSONP(request))
+    if (!request._properties[API_PARAM_VROOMAPI] && sendAPIRequestViaJSONP(request)) {
         return;
+    }
 
-    if (sendAPIRequestViaXHR(request))
+    if (sendAPIRequestViaXHR(request)) {
         return;
+    }
 
-    if (sendAPIRequestViaFlash(request))
+    if (sendAPIRequestViaFlash(request)) {
         return;
+    }
 
     var errorObj = {};
     errorObj[API_PARAM_CODE] = ERROR_REQUEST_FAILED;
