@@ -157,7 +157,9 @@
             });
 
             function log(message) {
-                var child = document.createTextNode(message);
+                var child = document.createElement("pre");
+                child.innerText = message;
+                
                 var parent = document.getElementById('JsOutputDiv') || document.body;
                 parent.appendChild(child);
                 parent.appendChild(document.createElement("br"));
