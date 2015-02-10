@@ -109,25 +109,8 @@
                     linkType: downloadChecked ? "downloadLink" : "webViewLink",
                     multiSelect: multiSelectChecked,
                     success: function(files) {
-                        var values = files.values;
-                        var bundleLink = files.link;
-                        
                         log("OneDrive.open - success");
-                        log("Link to bundle (if applicable): " + bundleLink)
-                        for (var i = 0; i < values.length; i++) {
-                            log("File #" + i);
-                            var file = values[i];
-
-                            log("Name: " + file.fileName);
-                            log("Link: " + file.link);
-                            log("LinkType: " + file.linkType)
-                            log("Size: " + file.size);
-
-                            var thumbnails = file.thumbnails;
-                            for(var j = 0; j < thumbnails.length; j++) {
-                                log(thumbnails[j]);
-                            }
-                        }
+                        log(JSON.stringify(files));
                     },
                     cancel: function() {
                         log("OneDrive.open - user cancel");
