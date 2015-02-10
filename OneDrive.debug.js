@@ -5836,7 +5836,7 @@ var FilePickerOperation = null;
 
             var getItemProperties = {
                 path: generateSharingLinks ?
-                    "drives/" + owneCid + "/items/" + itemId + "?$expand=children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
+                    "drives/" + owneCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
                 method: HTTP_METHOD_GET,
                 use_vroom_api: generateSharingLinks,
                 interface_method: op._props[API_INTERFACE_METHOD]
