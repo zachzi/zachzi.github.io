@@ -110,7 +110,7 @@
                     multiSelect: multiSelectChecked,
                     success: function(files) {
                         log("OneDrive.open - success");
-                        log(JSON.stringify(files, undefined, 2));
+                        log(JSON.stringify(files, null, ' '));
                     },
                     cancel: function() {
                         log("OneDrive.open - user cancel");
