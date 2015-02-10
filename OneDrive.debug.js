@@ -1368,12 +1368,12 @@ function sendAPIRequestViaXHR(request) {
     var xdrParams = prepareXDRRequest(request),
         xdr = new XMLHttpRequest();
 
+    xdr.open(xdrParams.method, xdrParams.url, true);
+
     // Set request headers.
     xdrParams.requestHeaders.forEach(function (header) {
         xdr.setRequestHeader(header.name, header.value);
     });
-
-    xdr.open(xdrParams.method, xdrParams.url, true);
 
     xdr.onreadystatechange = function () {
         if (xdr.readyState == 4) {
@@ -1393,19 +1393,21 @@ function sendAPIRequestViaXHR(request) {
 }
 
 function prepareXDRRequest(request) {
-    var params = cloneObjectExcept(
-            request._properties,
-            null,
-            [API_PARAM_CALLBACK, API_PARAM_PATH, API_PARAM_METHOD]),
-        method = params[API_PARAM_METHOD],
-        requestHeaders = params[API_PARAM_HEADERS_REQUEST] || [],
-        responseHeaders = params[API_PARAM_HEADERS_RESPONSE] || [],
-        jsonBody = params[API_PARAM_BODY_JSON],
-        useVroomApi = params[API_PARAM_VROOMAPI],
+    var method = request._properties[API_PARAM_METHOD],
         url = appendUrlParameters(request._url, {'ts': (new Date().getTime())}),
         token = wl_app.getAccessTokenForApi(),
         requestBody = null,
         xdrMethod;
+
+    var params = cloneObjectExcept(
+            request._properties,
+            null,
+            [API_PARAM_CALLBACK, API_PARAM_PATH, API_PARAM_METHOD]),
+        requestHeaders = params[API_PARAM_HEADERS_REQUEST] || [],
+        responseHeaders = params[API_PARAM_HEADERS_RESPONSE] || [],
+        jsonBody = params[API_PARAM_BODY_JSON],
+        useVroomApi = params[API_PARAM_VROOMAPI];
+        
 
     params[API_SUPPRESS_REDIRECTS] = "true";
 
