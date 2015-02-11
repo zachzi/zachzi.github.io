@@ -1420,11 +1420,13 @@ function prepareXDRRequest(request) {
         }
     }
     else {
-        requestBody = (jsonBody || useVroomApi) ? JSON.stringify(jsonBody || {}) : serializeParameters(params);
-        requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application" + (jsonBody ? "json" : "/x-www-form-urlencoded") });
+        requestBody = (jsonBody || useVroomApi) ? JSON.stringify(jsonBody) : serializeParameters(params);
+        requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application/" + (jsonBody ? "json" : "x-www-form-urlencoded") });
     }
 
-    url += "&method=" + method;
+    if (!useVroomApi) {
+        url += "&method=" + method;
+    }
 
     return {
         url: url,
