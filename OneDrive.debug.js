@@ -321,7 +321,7 @@ OneDriveApp.prototype = {
                         // Sharing view link for the bundle.
                         files.link = apiResponse.webUrl;
 
-                        responseFiles = apiResponse.children || [];
+                        responseFiles = (apiResponse.children && apiResponse.children.length > 0) ? apiResponse.children : [apiResponse];
                         for (var i = 0; i < responseFiles.length; i++) {
                             file = responseFiles[i];
                             thumbnails = [];
@@ -1393,21 +1393,19 @@ function sendAPIRequestViaXHR(request) {
 }
 
 function prepareXDRRequest(request) {
-    var method = request._properties[API_PARAM_METHOD],
-        url = appendUrlParameters(request._url, {'ts': (new Date().getTime())}),
+    var url = appendUrlParameters(request._url, { 'ts': (new Date().getTime()) }),
+        method = request._properties[API_PARAM_METHOD],
         token = wl_app.getAccessTokenForApi(),
-        requestBody = null,
-        xdrMethod;
+        requestBody = null;
 
     var params = cloneObjectExcept(
             request._properties,
             null,
-            [API_PARAM_CALLBACK, API_PARAM_PATH, API_PARAM_METHOD]),
+            [API_PARAM_CALLBACK, API_PARAM_PATH, API_PARAM_METHOD]),    
         requestHeaders = params[API_PARAM_HEADERS_REQUEST] || [],
         responseHeaders = params[API_PARAM_HEADERS_RESPONSE] || [],
         jsonBody = params[API_PARAM_BODY_JSON],
-        useVroomApi = params[API_PARAM_VROOMAPI];
-        
+        useVroomApi = params[API_PARAM_VROOMAPI];   
 
     params[API_SUPPRESS_REDIRECTS] = "true";
 
@@ -1417,17 +1415,12 @@ function prepareXDRRequest(request) {
     }
 
     if (method === HTTP_METHOD_GET || method === HTTP_METHOD_DELETE) {
-        xdrMethod = HTTP_METHOD_GET;
-        url += "&" + serializeParameters(params);
+        if (!useVroomApi) {
+            url += "&" + serializeParameters(params);
+        }
     }
     else {
-        if (jsonBody || useVroomApi) {
-            requestBody = JSON.stringify(jsonBody || {});
-        } else {
-            requestBody = serializeParameters(params);
-        }
-
-        xdrMethod = HTTP_METHOD_POST;
+        requestBody = (jsonBody || useVroomApi) ? JSON.stringify(jsonBody || {}) : serializeParameters(params);
         requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application" + (jsonBody ? "json" : "/x-www-form-urlencoded") });
     }
 
@@ -1435,7 +1428,7 @@ function prepareXDRRequest(request) {
 
     return {
         url: url,
-        method: xdrMethod,
+        method: method,
         requestHeaders: requestHeaders,
         responseHeaders: responseHeaders,
         body: requestBody
