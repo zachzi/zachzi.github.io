@@ -126,7 +126,7 @@
                 var nameInput = $("#file-name")[0];
                 
                 if(urlInput.checked) {
-                    file = urlInput.value;
+                    file = $("#url-text")[0].value;
                 }
                 else if($("#form-upload")[0].checked) {
                     file = "file";
