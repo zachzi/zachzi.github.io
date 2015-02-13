@@ -374,20 +374,23 @@ OneDriveApp.prototype = {
 
                 switch (uploadType) {
                     case UPLOADTYPE_URL:
+                        // Folder ID comes in the format: folder.{cid}.{cid}!{itemId} -> for vroom 
+                        // we only want {cid}!{itemId}.
+                        var vroomFolderId = folderId.split(".")[2];
                         var accessToken = internalApp.getAccessTokenForApi();
                         var urlUploadProperties = {
-                                path: "drives/" + pickerResponse.owner_cid + "/items/" + folderId + "/children",
-                                method: HTTP_METHOD_POST, 
-                                use_vroom_api: true,
-                                request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
-                                response_headers: [API_PARAM_LOCATION],
-                                json_body: {
-                                    "@content.sourceUrl": file,
-                                    "name": fileName,
-                                    "file": {}
-                                },
-                                interface_method: method
-                            };
+                            path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
+                            method: HTTP_METHOD_POST, 
+                            use_vroom_api: true,
+                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
+                            response_headers: [API_PARAM_LOCATION],
+                            json_body: {
+                                "@content.sourceUrl": file,
+                                "name": fileName,
+                                "file": {}
+                            },
+                            interface_method: method
+                        };
 
                         // Upload opeartion.
                         internalApp.api(urlUploadProperties).then(
