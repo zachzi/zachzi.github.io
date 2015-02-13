@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.8609.2002
+// WL.JS Version 5.5.8612.2002
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -26,8 +26,8 @@ OneDrive.open = function(options) {
     /// &#10; cancel:  Optional. A callback function invoked when the user cancels the file picker operation. Arguments: none
     /// </param>
 
-    var clonedOptions = cloneObject(options),
-        app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_OPEN);
+    var clonedOptions = cloneObject(options);
+    var app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_OPEN);
 
     try {
         app.initialize();
@@ -58,8 +58,8 @@ OneDrive.save = function(options) {
     /// &#10; error:  Optional. A callback function invoked when an error occurs. Argument: errorString
     /// </param>
 
-    var clonedOptions = cloneObject(options),
-        app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_SAVE);
+    var clonedOptions = cloneObject(options);
+    var app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_SAVE);
 
     try {
         app.initialize();
@@ -88,8 +88,8 @@ OneDrive.createOpenButton = function (options) {
     /// &#10; cancel:  Optional. A callback function invoked when the user cancels the file picker operation. Arguments: none
     /// </param>
 
-    var clonedOptions = cloneObject(options),
-        app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_CREATEBUTTON_OPEN);
+    var clonedOptions = cloneObject(options);
+    var app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_CREATEBUTTON_OPEN);
 
     try {
         app.initialize();
@@ -129,8 +129,8 @@ OneDrive.createSaveButton = function(options) {
     /// &#10; error:  Optional. A callback function invoked when an error occurs. Argument: errorString
     /// </param>
 
-    var clonedOptions = cloneObject(options),
-        app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_CREATEBUTTON_SAVE);
+    var clonedOptions = cloneObject(options);
+    var app = new OneDriveApp(clonedOptions, IMETHOD_ONEDRIVE_CREATEBUTTON_SAVE);
 
     try {
         app.initialize();
@@ -156,16 +156,14 @@ function OneDriveApp(options, method) {
     /// OneDriveApp constructor.
     /// </summary>
 
-    var that = this,
-        internalApp = options[ONEDRIVE_PARAM_INTERNAL];
+    var that = this;
+    var internalApp = options[ONEDRIVE_PARAM_INTERNAL];
 
     that._internalApp = (WL.UnitTests && typeof (internalApp) === TYPE_OBJECT) ? internalApp : wl_app;
 
     that._options = options;
     that._method = method;
 }
-
-OneDriveApp.vroomThumbnailSizes = ["large", "medium", "small"];
 
 OneDriveApp.onloadInit = function() {
     /// <summary>
@@ -174,24 +172,24 @@ OneDriveApp.onloadInit = function() {
 
     checkDocumentReady(function() {
         // Turn links into OneDrive save buttons.
-        var linkTags = document.getElementsByTagName("a");
-        for (var i = 0; i < linkTags.length; i++) {
-            var link = linkTags[i];
-            if (link.className.indexOf(DOM_CLASS_ONEDRIVE_SAVEBUTTON) > -1) {
-                // Modify the link HTML and style.
-                OneDriveApp.createButtonElement(link, FILEDIALOG_PARAM_MODE_SAVE, UI_SIGNIN_THEME_BLUE);
+        var links = document.querySelectorAll(DOM_CLASS_ONEDRIVE_SAVEBUTTON);
 
-                // Attach click event to execute save.
-                var url = link.href,
-                    app = new OneDriveApp({ file: url }, IMETHOD_ONEDRIVE_CREATEBUTTON_SAVE_FROMLINK);
+        for (var i = 0; i < links.length; i++) {
+            var link = links[i];
 
-                link.href = "#";
-                attachDOMEvent(link, DOM_EVENT_CLICK, function (event) {
-                    app.initialize();
-                    app.executeSaveOperation();
-                    return false;
-                });
-            }
+            // Modify the link HTML and style.
+            OneDriveApp.createButtonElement(link, FILEDIALOG_PARAM_MODE_SAVE, UI_SIGNIN_THEME_BLUE);
+
+            // Attach click event to execute save.
+            var url = link.href;
+            var app = new OneDriveApp({ file: url }, IMETHOD_ONEDRIVE_CREATEBUTTON_SAVE_FROMLINK);
+
+            link.href = "#";
+            attachDOMEvent(link, DOM_EVENT_CLICK, function (event) {
+                app.initialize();
+                app.executeSaveOperation();
+                return false;
+            });
         }
     });
 };
@@ -214,13 +212,6 @@ OneDriveApp.createButtonElement = function(element, mode, theme) {
 
     // Add button style.
     buildSkyDrivePickerControlStyle(properties, element);
-
-    // Link specific styling.
-    if (element instanceof HTMLAnchorElement) {
-        element.style.lineHeight = "20px";
-        element.style.display = "inline-block";
-        element.style.textDecoration = "none";
-    }
 
     return element;
 };
@@ -255,15 +246,15 @@ OneDriveApp.prototype = {
         /// third party app.
         /// </summary>
 
-        var that = this,
-            internalApp = that._internalApp,
-            method = that._method;
+        var that = this;
+        var internalApp = that._internalApp;
+        var method = that._method;
 
         // Option parameters.
-        var options = that._options,
-            linkType = options[ONEDRIVE_PARAM_LINKTYPE],
-            success = options[ONEDRIVE_PARAM_SUCCESS],
-            cancel = options[ONEDRIVE_PARAM_CANCEL];
+        var options = that._options;
+        var linkType = options[ONEDRIVE_PARAM_LINKTYPE];
+        var success = options[ONEDRIVE_PARAM_SUCCESS];
+        var cancel = options[ONEDRIVE_PARAM_CANCEL];
 
         // Set file dialog properties.
         var fileDialogProperties = {
@@ -279,74 +270,47 @@ OneDriveApp.prototype = {
             // Success callback.
             function (fileDialogResponse) {
                 // Filter API response.
-                var responseFiles,
-                    file,
-                    fileThumbnails,
-                    thumbnails,
-                    apiResponse = fileDialogResponse.apiResponse;
+                var apiResponse = fileDialogResponse.apiResponse;
+                var isDownloadLinkType = linkType === ONEDRIVE_PARAM_LINKTYPE_DOWNLOAD;
 
                 // Data returned from SDK to third party app success callback.
                 var files = {
-                    link: null,
+                    link: isDownloadLinkType ? null : apiResponse.webUrl,
                     values: []
                 };
 
-                switch (linkType) {
-                    case ONEDRIVE_PARAM_LINKTYPE_DOWNLOAD:
-                        responseFiles = apiResponse.data || [];
-                        for (var i = 0; i < responseFiles.length; i++) {
-                            file = responseFiles[i];
-                            thumbnails = [];
+                var pickerFiles = isDownloadLinkType? 
+                    apiResponse.data : 
+                    (apiResponse.children && apiResponse.children.length > 0) ? apiResponse.children : [apiResponse];
 
-                            // Filter thumbnails from response.
-                            fileThumbnails = file.images;
-                            if (fileThumbnails) {
-                                for (var j = 0; j < fileThumbnails.length; j++) {
-                                    thumbnails.push(fileThumbnails[j].source);
-                                }
+                // Filter API response files.
+                for (var i = 0; i < pickerFiles.length; i++) {
+                    var file = pickerFiles[i];
+                    var thumbnails = [];
+
+                    // Filter file thumbnails.
+                    var fileThumbnails = isDownloadLinkType ? file.images : file.thumbnails && file.thumbnails[0];
+                    if (fileThumbnails) {
+                        if (isDownloadLinkType) {
+                            for (var j = 0; j < fileThumbnails.length; j++) {
+                                thumbnails.push(fileThumbnails[j].source);
                             }
-
-                            // Push file data.
-                            files.values.push({
-                                fileName: file.name,
-                                link: file.source,
-                                linkType: linkType,
-                                size: file.size,
-                                thumbnails: thumbnails
-                            });
-                        }
-
-                        break;
-                    case ONEDRIVE_PARAM_LINKTYPE_WEBVIEW:
-                        // Sharing view link for the bundle.
-                        files.link = apiResponse.webUrl;
-
-                        responseFiles = (apiResponse.children && apiResponse.children.length > 0) ? apiResponse.children : [apiResponse];
-                        for (var i = 0; i < responseFiles.length; i++) {
-                            file = responseFiles[i];
-                            thumbnails = [];
-
-                            // Filter thumbnails from response.
-                            fileThumbnails = file.thumbnails && file.thumbnails[0];
-                            if (fileThumbnails) {
-                                for (var j = 0; j < OneDriveApp.vroomThumbnailSizes.length; j++) {
-                                    thumbnails.push(fileThumbnails[OneDriveApp.vroomThumbnailSizes[j]].url);
-                                }
+                        } 
+                        else {
+                            for (var j = 0; j < VROOM_THUMBNAIL_SIZES.length; j++) {
+                                thumbnails.push(fileThumbnails[VROOM_THUMBNAIL_SIZES[j]].url);
                             }
-
-                            // Push file data.
-                            files.values.push({
-                                fileName: file.name,
-                                link: file.webUrl,
-                                linkType: linkType,
-                                size: file.size,
-                                thumbnails: thumbnails
-                            });
                         }
+                    }
 
-                        break;
-                    default:
-                        throw new Error(ERROR_DESC_LINKTYPE_NOTIMPLEMENTED.replace("LINKTYPE", linkType));
+                    // File data returned to the app.
+                    files.values.push({
+                        fileName: file.name,
+                        link: isDownloadLinkType ? file.source : file.webUrl,
+                        linkType: linkType,
+                        size: file.size,
+                        thumbnails: thumbnails
+                    });
                 }
 
                 success(files);
@@ -366,28 +330,30 @@ OneDriveApp.prototype = {
         /// Let the user save a file to a folder in thier OneDrive.
         /// </summary>
 
-        var that = this,
-            internalApp = that._internalApp,
-            options = that._options,
-            method = that._method;
+        var that = this;
+        var internalApp = that._internalApp;
+        var options = that._options;
+        var method = that._method;
 
         // Determine upload type and validate properties. Due to the URL detection,
         // the form element id can not start with "http://" or "https://", or it will
         // be interpreted as a URL.
-        var file = options[ONEDRIVE_PARAM_FILE],
-            fileName = options[ONEDRIVE_PARAM_FILENAME],
-            uploadType = UPLOADTYPE_FORM;
+        var file = options[ONEDRIVE_PARAM_FILE];
+        var fileName = options[ONEDRIVE_PARAM_FILENAME];
+        var uploadType = UPLOADTYPE_FORM;
         
         if (isPathFullUrl(file)) {
             // Upload from URL scenario.
             uploadType = UPLOADTYPE_URL;
+
+            // If the file name is not supplied to the SDK, try to parse it from the URL.
             fileName = fileName || getFileNameFromUrl(file);
         }
 
         // Callbacks
-        var success = options[ONEDRIVE_PARAM_SUCCESS],
-            progress = options[ONEDRIVE_PARAM_PROGRESS],
-            cancel = options[ONEDRIVE_PARAM_CANCEL];
+        var success = options[ONEDRIVE_PARAM_SUCCESS];
+        var progress = options[ONEDRIVE_PARAM_PROGRESS];
+        var cancel = options[ONEDRIVE_PARAM_CANCEL];
 
         // Set file dialog properties.
         var fileDialogProperties = {
@@ -401,14 +367,15 @@ OneDriveApp.prototype = {
         internalApp.fileDialog(fileDialogProperties).then(
             // Success callback.
             function (fileDialogResponse) {
-                var pickerResponse = fileDialogResponse.pickerResponse,
-                    apiResponse = fileDialogResponse.apiResponse,
-                    folderId = apiResponse.data[0].id;
+                var pickerResponse = fileDialogResponse.pickerResponse;
+                var apiResponse = fileDialogResponse.apiResponse;
+
+                var folderId = apiResponse.data && apiResponse.data[0].id;
 
                 switch (uploadType) {
                     case UPLOADTYPE_URL:
-                        var accessToken = internalApp.getAccessTokenForApi(),
-                            urlUploadProperties = {
+                        var accessToken = internalApp.getAccessTokenForApi();
+                        var urlUploadProperties = {
                                 path: "drives/" + pickerResponse.owner_cid + "/items/" + folderId + "/children",
                                 method: HTTP_METHOD_POST, 
                                 use_vroom_api: true,
@@ -486,8 +453,8 @@ OneDriveApp.prototype = {
         ///  Begin polling for remote upload completion.
         /// </summary>
 
-        var that = this,
-            progressApiProperties = {
+        var that = this;
+        var progressApiProperties = {
                 path: location,
                 method: HTTP_METHOD_GET,
                 response_headers: [API_PARAM_LOCATION],
@@ -501,22 +468,18 @@ OneDriveApp.prototype = {
                 function(apiResponse) {
                     switch (apiResponse[API_PARAM_STATUS_HTTP]) {
                         case API_STATUS_HTTP_ACCEPTED:
-                            {
-                                invokeCallbackSynchronous(progress, apiResponse[API_PARAM_PERCENT_COMPLETE]);
+                            invokeCallbackSynchronous(progress, apiResponse[API_PARAM_PERCENT_COMPLETE]);
 
-                                // Upload not yet completed, so continue polling.
-                                delayInvoke(pollForProgress, 100 /* milliseconds */);
-                                break;
-                            }
+                            // Upload not yet completed, so continue polling.
+                            delayInvoke(pollForProgress, 100 /* milliseconds */);
+                            break;
                         case API_STATUS_HTTP_OTHER:
-                            {
-                                // Call final progress update. This guarantees that we call
-                                // the progress callback at least once.
-                                invokeCallbackSynchronous(progress, 100.0);
+                            // Call final progress update. This guarantees that we call
+                            // the progress callback at least once.
+                            invokeCallbackSynchronous(progress, 100.0);
 
-                                invokeCallbackSynchronous(success);
-                                break;
-                            }
+                            invokeCallbackSynchronous(success);
+                            break;
                         default:
                             that.processErrorCallback(apiResponse, ERROR_DESC_OPERATION_UPLOAD_POLLING);
                     }
@@ -601,9 +564,9 @@ OneDriveApp.prototype = {
         /// Create the HTML button element for the open / save buttons.
         /// </summary>
 
-        var buttonElement = document.createElement("button"),
-            mode  = this._method === IMETHOD_ONEDRIVE_CREATEBUTTON_OPEN ? FILEDIALOG_PARAM_MODE_OPEN : FILEDIALOG_PARAM_MODE_SAVE,
-            theme = this._options[ONEDRIVE_PARAM_THEME] === ONEDRIVE_PARAM_THEME_BLUE ? UI_SIGNIN_THEME_BLUE : UI_SIGNIN_THEME_WHITE;
+        var buttonElement = document.createElement("button");
+        var mode = this._method === IMETHOD_ONEDRIVE_CREATEBUTTON_OPEN ? FILEDIALOG_PARAM_MODE_OPEN : FILEDIALOG_PARAM_MODE_SAVE;
+        var theme = this._options[ONEDRIVE_PARAM_THEME] === ONEDRIVE_PARAM_THEME_BLUE ? UI_SIGNIN_THEME_BLUE : UI_SIGNIN_THEME_WHITE;
 
         return OneDriveApp.createButtonElement(buttonElement, mode, theme);
     },
@@ -927,7 +890,7 @@ var UI_SIGNIN_THEME_BLUE = "blue",
  */
 var UPLOAD_STATE_ID = "id";
 
-var ONEDRIVE_API = "onedrive_api",
+var WL_ONEDRIVE_API = "onedrive_api",
     WL_AUTH_SERVER = "auth_server",
     WL_APISERVICE_URI = "apiservice_uri",
     WL_SKYDRIVE_URI = "skydrive_uri",
@@ -1365,8 +1328,8 @@ function sendAPIRequestViaXHR(request) {
         return false;
     }
 
-    var xdrParams = prepareXDRRequest(request),
-        xdr = new XMLHttpRequest();
+    var xdrParams = prepareXDRRequest(request);
+    var xdr = new XMLHttpRequest();
 
     xdr.open(xdrParams.method, xdrParams.url, true);
 
@@ -1393,39 +1356,40 @@ function sendAPIRequestViaXHR(request) {
 }
 
 function prepareXDRRequest(request) {
-    var url = appendUrlParameters(request._url, { 'ts': (new Date().getTime()) }),
-        method = request._properties[API_PARAM_METHOD],
-        token = wl_app.getAccessTokenForApi(),
-        requestBody = null;
+    var url = request._url;
+    var method = request._properties[API_PARAM_METHOD];
+    var token = wl_app.getAccessTokenForApi();
+    var requestBody = null;
 
     var params = cloneObjectExcept(
-            request._properties,
-            null,
-            [API_PARAM_CALLBACK, API_PARAM_PATH, API_PARAM_METHOD]),    
-        requestHeaders = params[API_PARAM_HEADERS_REQUEST] || [],
-        responseHeaders = params[API_PARAM_HEADERS_RESPONSE] || [],
-        jsonBody = params[API_PARAM_BODY_JSON],
-        useVroomApi = params[API_PARAM_VROOMAPI];   
+        request._properties,
+        null,
+        [API_PARAM_CALLBACK, API_PARAM_PATH, API_PARAM_METHOD]);
+    var requestHeaders = params[API_PARAM_HEADERS_REQUEST] || [];
+    var responseHeaders = params[API_PARAM_HEADERS_RESPONSE] || [];
+    var jsonBody = params[API_PARAM_BODY_JSON];
+    var useVroomApi = params[API_PARAM_VROOMAPI];   
 
     params[API_SUPPRESS_REDIRECTS] = "true";
 
-    // The access token should not be passed to the vroom API.
-    if (token != null && !useVroomApi) {
+    if (token) {
         params[AK_ACCESS_TOKEN] = token;
     }
 
-    if (method === HTTP_METHOD_GET || method === HTTP_METHOD_DELETE) {
-        if (!useVroomApi) {
-            url += "&" + serializeParameters(params);
-        }
-    }
-    else {
-        requestBody = (jsonBody || useVroomApi) ? JSON.stringify(jsonBody) : serializeParameters(params);
-        requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application/" + (jsonBody ? "json" : "x-www-form-urlencoded") });
+    if (!useVroomApi) {
+        appendUrlParameters(url, { ts: (new Date().getTime()), method: method });
     }
 
-    if (!useVroomApi) {
-        url += "&method=" + method;
+    switch (method) {
+        case HTTP_METHOD_GET:
+        case HTTP_METHOD_DELETE:
+            if (!useVroomApi) {
+                appendUrlParameters(url, params);
+            }
+            break;
+        default:
+            requestBody = useVroomApi ? JSON.stringify(jsonBody) : serializeParameters(params);
+            requestHeaders.push({ name: API_PARAM_CONTENTTYPE, value: "application/" + (jsonBody ? "json" : "x-www-form-urlencoded") });
     }
 
     return {
@@ -2629,7 +2593,7 @@ function serializeParameters(dict) {
     if (dict != null) {
         for (var key in dict) {
             if (dict.hasOwnProperty(key)) {
-                var separator = (serialized.length === 0) ? "" : "&";
+                var separator = serialized.length ? "&" : "";
                 var value = dict[key];
                 serialized += separator + encodeURIComponent(key) + "=" + encodeURIComponent(stringifyParamValue(value));
             }
@@ -3116,7 +3080,7 @@ var EVENT_AUTH_RESPONSE = "auth.response";
  * DOM strings.
  */
 var DOM_ATTR_CLIENTID = "client-id",
-    DOM_CLASS_ONEDRIVE_SAVEBUTTON = "OneDriveSaveButton",
+    DOM_CLASS_ONEDRIVE_SAVEBUTTON = ".OneDriveSaveButton",
     DOM_FILE = "file",
     DOM_EVENT_CLICK = "click",
     DOM_ID_SDK = "onedrive-js";
@@ -3186,7 +3150,6 @@ var UPLOADTYPE_URL = "from_url",
  * OneDrive error strings.
  */
 var ERROR_DESC_UPLOADTYPE_NOTIMPLEMENTED = "METHOD: This upload method is not implemented.",
-    ERROR_DESC_LINKTYPE_NOTIMPLEMENTED = "LINKTYPE: Support for this link type is not implemented.",
     ERROR_DESC_GENERAL = "{0}: Operation: '{1}' Error message: {2}",
     ERROR_DESC_OPERATION_API = "API call",
     ERROR_DESC_OPERATION_PICKER = "invoke picker",
@@ -3223,9 +3186,10 @@ var FILEDIALOG_PARAM_AUTH = "auth",
 /**
  * Miscellaneous
  */
-var KEYCODE_ESC = 27;
+var KEYCODE_ESC = 27,
     UI_SKYDRIVEPICKER = "skydrivepicker",
-    ONEDRIVE_PREFIX = "[OneDrive]";
+    ONEDRIVE_PREFIX = "[OneDrive]",
+    VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
 
 WL.init = function (properties) {
     /// <summary>
@@ -4332,6 +4296,13 @@ function buildSkyDrivePickerControlStyle(properties, button)
     buttonStyle.textAlign = "center";
     buttonStyle.cursor = "pointer";
 
+    // Link specific styling.
+    if (button instanceof HTMLAnchorElement) {
+        buttonStyle.lineHeight = "20px";
+        buttonStyle.display = "inline-block";
+        buttonStyle.textDecoration = "none";
+    }
+
     imageStyle.verticalAlign = "middle";
     imageStyle.height = "16px";
 
@@ -5200,7 +5171,7 @@ function getAuthServerName() {
  * The Web version of getApiServiceUrl() method.
  */
 function getApiServiceUrl(useVroomApi) {
-    return useVroomApi ? wl_app[ONEDRIVE_API] : wl_app[WL_APISERVICE_URI];
+    return useVroomApi ? wl_app[WL_ONEDRIVE_API] : wl_app[WL_APISERVICE_URI];
 }
 
 
@@ -5823,7 +5794,7 @@ var FilePickerOperation = null;
                 return;
             }
 
-            var owneCid = response[AK_OWNER_CID],
+            var ownerCid = response[AK_OWNER_CID],
                 resourceId = response[AK_RESOURCEID],
                 itemId = response[AK_ITEMID],
                 authKey = response[AK_AUTH_KEY];
@@ -5840,7 +5811,7 @@ var FilePickerOperation = null;
 
             var getItemProperties = {
                 path: generateSharingLinks ?
-                    "drives/" + owneCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
+                    "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
                 method: HTTP_METHOD_GET,
                 use_vroom_api: generateSharingLinks,
                 interface_method: op._props[API_INTERFACE_METHOD]
@@ -6946,7 +6917,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8609.2002");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8612.2002");
 
         wl_app.testInit = function(properties) {
 
@@ -6968,21 +6939,21 @@ wl_app._locale = "en";
         prodSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         prodSettings[WL_SKYDRIVE_URI] = "https://onedrive.live.com/";
         prodSettings[WL_SDK_ROOT] = "//js.live.net/v5.0/";
-        prodSettings[ONEDRIVE_API] = "https://df.api.onedrive.com/v1.0/";
+        prodSettings[WL_ONEDRIVE_API] = "https://api.onedrive.com/v1.0/";
 
         var dfSettings = {};
         dfSettings[WL_AUTH_SERVER] = "login.live.com";
         dfSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         dfSettings[WL_SKYDRIVE_URI] = "https://onedrive.live.com/";
         dfSettings[WL_SDK_ROOT] = "//df-js.live.net/v5.0/";
-        dfSettings[ONEDRIVE_API] = "https://api.onedrive.com/v1.0/";
+        dfSettings[WL_ONEDRIVE_API] = prodSettings[WL_ONEDRIVE_API];
 
         var intSettings = {};
         intSettings[WL_AUTH_SERVER] = "login.live-int.com";
         intSettings[WL_APISERVICE_URI] = "https://apis.live-int.net/v5.0/";
         intSettings[WL_SKYDRIVE_URI] = "https://onedrive.live-int.com/";
         intSettings[WL_SDK_ROOT] = "//js.live-int.net/v5.0/";
-        intSettings[ONEDRIVE_API] = "https://api.onedrive.com/v1.0/";
+        intSettings[WL_ONEDRIVE_API] = prodSettings[WL_ONEDRIVE_API];
 
         wl_app._settings = 
         {
