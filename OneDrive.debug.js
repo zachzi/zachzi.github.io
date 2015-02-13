@@ -6942,7 +6942,7 @@ wl_app._locale = "en";
         prodSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         prodSettings[WL_SKYDRIVE_URI] = "https://onedrive.live.com/";
         prodSettings[WL_SDK_ROOT] = "//js.live.net/v5.0/";
-        prodSettings[WL_ONEDRIVE_API] = "https://api.onedrive.com/v1.0/";
+        prodSettings[WL_ONEDRIVE_API] = "https://df.api.onedrive.com/v1.0/";
 
         var dfSettings = {};
         dfSettings[WL_AUTH_SERVER] = "login.live.com";
