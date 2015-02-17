@@ -101,6 +101,18 @@
     <div id="JsOutputDiv"></div>
     <script>
         window.onload = function(){
+            WL.init({ client_id: "0000000040125824" });
+            
+            WL.login({ "scope": "wl.skydrive_update" }).then(
+                function(response) {
+                    log("Authenticated.");
+                    
+                },
+                function(response) {
+                    log("Failed to authenticate.");
+                }
+            );
+            
             $("#open").click(function(){
                 var multiSelectChecked = $("#multiSelect")[0].checked;
                 var downloadChecked = $("#downloadLink")[0].checked;
