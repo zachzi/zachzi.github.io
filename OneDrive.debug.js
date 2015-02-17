@@ -379,7 +379,7 @@ OneDriveApp.prototype = {
                         var vroomFolderId = folderId.split(".")[2];
                         var accessToken = internalApp.getAccessTokenForApi();
                         var urlUploadProperties = {
-                            path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
+                            path: "drives/" + /*pickerResponse.owner_cid*/ "-7592275166240781166" + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
                             request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
@@ -6944,7 +6944,7 @@ wl_app._locale = "en";
         prodSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         prodSettings[WL_SKYDRIVE_URI] = "https://onedrive.live.com/";
         prodSettings[WL_SDK_ROOT] = "//js.live.net/v5.0/";
-        prodSettings[WL_ONEDRIVE_API] = "https://api.onedrive.com/v1.0/";
+        prodSettings[WL_ONEDRIVE_API] = "https://df.api.onedrive.com/v1.0/";
 
         var dfSettings = {};
         dfSettings[WL_AUTH_SERVER] = "login.live.com";
@@ -6975,7 +6975,7 @@ wl_app._locale = "en";
             }
         };
 
-        wl_app._settings.init("DF");
+        wl_app._settings.init("PROD");
 
         wl_app[FILEDIALOG_PARAM_PICKER_SCRIPT] = "wl.skydrivepicker.debug.js";
         wl_app.onloadInit();
