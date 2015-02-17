@@ -460,6 +460,7 @@ OneDriveApp.prototype = {
         var progressApiProperties = {
                 path: location,
                 method: HTTP_METHOD_GET,
+                use_vroom_api: true,
                 response_headers: [API_PARAM_LOCATION],
                 interface_method: that._method
             };
@@ -6942,7 +6943,7 @@ wl_app._locale = "en";
         prodSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         prodSettings[WL_SKYDRIVE_URI] = "https://onedrive.live.com/";
         prodSettings[WL_SDK_ROOT] = "//js.live.net/v5.0/";
-        prodSettings[WL_ONEDRIVE_API] = "https://df.api.onedrive.com/v1.0/";
+        prodSettings[WL_ONEDRIVE_API] = "https://api.onedrive.com/v1.0/";
 
         var dfSettings = {};
         dfSettings[WL_AUTH_SERVER] = "login.live.com";
