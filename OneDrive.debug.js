@@ -401,7 +401,7 @@ OneDriveApp.prototype = {
 
                                 // Started remote upload.
                                 (urlUploadResponse[API_PARAM_STATUS_HTTP] === API_STATUS_HTTP_ACCEPTED && !stringIsNullOrEmpty(location)) ?
-                                    that.beginPolling(success, progress, location) :
+                                    that.beginPolling(success, progress, location, accessToken) :
                                     that.processErrorCallback(urlUploadResponse, ERROR_DESC_OPERATION_UPLOAD);
                             },
                             // Error callback.
@@ -451,7 +451,7 @@ OneDriveApp.prototype = {
         );
     },
 
-    beginPolling: function (success, progress, location) {
+    beginPolling: function (success, progress, location, accessToken) {
         /// <summary>
         ///  Begin polling for remote upload completion.
         /// </summary>
@@ -461,6 +461,7 @@ OneDriveApp.prototype = {
                 path: location,
                 method: HTTP_METHOD_GET,
                 use_vroom_api: true,
+                request_headers: [{ name: API_PARAM_AUTH, value: "bearer " + accessToken }],
                 response_headers: [API_PARAM_LOCATION],
                 interface_method: that._method
             };
@@ -1343,7 +1344,7 @@ function sendAPIRequestViaXHR(request) {
     });
 
     xdr.onreadystatechange = function () {
-        if (xdr.readyState == 4) {
+        if (xdr.readyState === 4) {
             // Pass back the requested response headers.
             var responseHeaders = [];
             xdrParams.responseHeaders.forEach(function (headerName) {
