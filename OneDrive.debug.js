@@ -2426,7 +2426,7 @@ function getFileNameFromUrl(url) {
 
 function invokeCallbackSynchronous(callback, resp) {
     if (typeof (callback) == TYPE_FUNCTION) {
-        resp ? callback(resp) : callback();      
+        (resp !== undefined) ? callback(resp) : callback();      
     }
 }
 
