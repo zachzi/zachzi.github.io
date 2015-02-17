@@ -6955,7 +6955,7 @@ wl_app._locale = "en";
 
         var intSettings = {};
         intSettings[WL_AUTH_SERVER] = "login.live-int.com";
-        intSettings[WL_APISERVICE_URI] = "https://apis.live-int.net/v5.0/";
+        intSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         intSettings[WL_SKYDRIVE_URI] = "https://onedrive.live-int.com/";
         intSettings[WL_SDK_ROOT] = "//js.live-int.net/v5.0/";
         intSettings[WL_ONEDRIVE_API] = prodSettings[WL_ONEDRIVE_API];
