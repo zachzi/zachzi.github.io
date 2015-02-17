@@ -379,7 +379,7 @@ OneDriveApp.prototype = {
                         var vroomFolderId = folderId.split(".")[2];
                         var accessToken = internalApp.getAccessTokenForApi();
                         var urlUploadProperties = {
-                            path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
+                            path: "drives/" + /*pickerResponse.owner_cid*/ "-7592275166240781166" + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
                             request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
