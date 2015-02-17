@@ -374,9 +374,13 @@ OneDriveApp.prototype = {
 
                 switch (uploadType) {
                     case UPLOADTYPE_URL:
-                        // Folder ID comes in the format: folder.{cid}.{cid}!{itemId} -> for vroom 
-                        // we only want {cid}!{itemId}.
-                        var vroomFolderId = folderId.split(".")[2];
+                        // Folder ID comes in the format from LiveConnect: folder.{cid}.{cid}!{itemId} 
+                        // -> for vroom we only want {cid}!{itemId}. If the folder is the root, then the
+                        // id will be folder.{cid} which is also invalid for vroom. In that case, we just
+                        // want to use the string "root" for the folder ID.
+                        var folderIdSplit = folderId.split(".");
+                        var vroomFolderId = folderIdSplit.length > 2 ? folderIdSplit[2] : "root";
+
                         var accessToken = internalApp.getAccessTokenForApi();
                         var urlUploadProperties = {
                             path: "drives/" + /*pickerResponse.owner_cid*/ "-7592275166240781166" + "/items/" + vroomFolderId + "/children",
