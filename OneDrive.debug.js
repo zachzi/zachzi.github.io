@@ -462,21 +462,14 @@ OneDriveApp.prototype = {
 
         var that = this;
         var progressApiProperties = {
-                path: location,
+                path: location + "?access_token=" + accessToken,
                 method: HTTP_METHOD_GET,
                 use_vroom_api: true,
-                request_headers: [{ name: API_PARAM_AUTH, value: "bearer " + accessToken }],
                 response_headers: [API_PARAM_LOCATION],
                 interface_method: that._method
             };
 
-        var attempts = 5;
         var pollForProgress = function () {
-            if(attempts-- < 0) {
-                progressApiProperties.path = "https://df.api.onedrive.com/v1.0/monitor/done/96A2D1F63F32CC92!103853?access_token=" + accessToken;
-                progressApiProperties.request_headers = null;
-            }
-            
             // Query for upload progress.
             that._internalApp.api(progressApiProperties).then(
                 // Success callback.
@@ -488,7 +481,7 @@ OneDriveApp.prototype = {
                             // Upload not yet completed, so continue polling.
                             delayInvoke(pollForProgress, 100 /* milliseconds */);
                             break;
-                        case API_STATUS_HTTP_OTHER:
+                        case API_STATUS_HTTP_OK:
                             // Call final progress update. This guarantees that we call
                             // the progress callback at least once.
                             invokeCallbackSynchronous(progress, 100.0);
@@ -654,7 +647,6 @@ var API_DOWNLOAD = "download",
     API_STATUS_ERROR = "error",
     API_STATUS_HTTP_ACCEPTED = 202,
     API_STATUS_HTTP_OK = 200,
-    API_STATUS_HTTP_OTHER = 303,
     API_STATUS_HTTP_SERVERERROR = 500,
     API_STATUS_SUCCESS = "success",
     API_SUPPRESS_REDIRECTS = "suppress_redirects",
@@ -5826,7 +5818,7 @@ var FilePickerOperation = null;
 
             var getItemProperties = {
                 path: generateSharingLinks ?
-                    "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
+                    "drives/" + "-7592275166240781166" /*ownerCid*/ + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
                 method: HTTP_METHOD_GET,
                 use_vroom_api: generateSharingLinks,
                 interface_method: op._props[API_INTERFACE_METHOD]
@@ -6961,14 +6953,14 @@ wl_app._locale = "en";
         dfSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         dfSettings[WL_SKYDRIVE_URI] = "https://onedrive.live.com/";
         dfSettings[WL_SDK_ROOT] = "//df-js.live.net/v5.0/";
-        dfSettings[WL_ONEDRIVE_API] = prodSettings[WL_ONEDRIVE_API];
+        dfSettings[WL_ONEDRIVE_API] = "https://df.api.onedrive.com/v1.0/";
 
         var intSettings = {};
         intSettings[WL_AUTH_SERVER] = "login.live-int.com";
         intSettings[WL_APISERVICE_URI] = "https://apis.live.net/v5.0/";
         intSettings[WL_SKYDRIVE_URI] = "https://onedrive.live-int.com/";
         intSettings[WL_SDK_ROOT] = "//js.live-int.net/v5.0/";
-        intSettings[WL_ONEDRIVE_API] = prodSettings[WL_ONEDRIVE_API];
+        intSettings[WL_ONEDRIVE_API] = "https://newapi.storage.live-int.com/v1.0/";
 
         wl_app._settings = 
         {
