@@ -472,8 +472,8 @@ OneDriveApp.prototype = {
 
         var attempts = 5;
         var pollForProgress = function () {
-            if(!attempts--) {
-                progressApiProperties.location = "https://df.api.onedrive.com/v1.0/monitor/done/96A2D1F63F32CC92!103853";
+            if(attempts-- < 0) {
+                progressApiProperties.path = "https://df.api.onedrive.com/v1.0/monitor/done/96A2D1F63F32CC92!103853";
             }
             
             // Query for upload progress.
