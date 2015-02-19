@@ -461,13 +461,16 @@ OneDriveApp.prototype = {
         /// </summary>
 
         var that = this;
+        var pollingInterval = POLLING_INTERVAL;
+        var pollCount = 5;
+
         var progressApiProperties = {
-                path: location + "?access_token=" + accessToken,
-                method: HTTP_METHOD_GET,
-                use_vroom_api: true,
-                response_headers: [API_PARAM_LOCATION],
-                interface_method: that._method
-            };
+            path: appendUrlParameters(location, { access_token: accessToken }),
+            method: HTTP_METHOD_GET,
+            use_vroom_api: true,
+            response_headers: [API_PARAM_LOCATION],
+            interface_method: that._method
+        };  
 
         var pollForProgress = function () {
             // Query for upload progress.
@@ -478,8 +481,14 @@ OneDriveApp.prototype = {
                         case API_STATUS_HTTP_ACCEPTED:
                             invokeCallbackSynchronous(progress, apiResponse[API_PARAM_PERCENT_COMPLETE]);
 
-                            // Upload not yet completed, so continue polling.
-                            delayInvoke(pollForProgress, 100 /* milliseconds */);
+                            // Exponential backoff on polling to prevent DOSing the service.
+                            if (!pollCount--) {
+                                pollingInterval *= 2;
+                                pollCount = 5;
+                            }
+
+                            // Upload not yet completed, so continue polling. 
+                            delayInvoke(pollForProgress, pollingInterval);
                             break;
                         case API_STATUS_HTTP_OK:
                             // Call final progress update. This guarantees that we call
@@ -499,7 +508,8 @@ OneDriveApp.prototype = {
             );
         };
 
-        delayInvoke(pollForProgress, 1000 /* milliseconds */);
+        // Begin polling.
+        delayInvoke(pollForProgress, pollingInterval);
     },
 
     validateOpenParameters: function () {
@@ -3194,8 +3204,9 @@ var FILEDIALOG_PARAM_AUTH = "auth",
  * Miscellaneous
  */
 var KEYCODE_ESC = 27,
-    UI_SKYDRIVEPICKER = "skydrivepicker",
+    POLLING_INTERVAL = 1000 /* 1 second in milliseconds */,
     ONEDRIVE_PREFIX = "[OneDrive]",
+    UI_SKYDRIVEPICKER = "skydrivepicker",
     VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
 
 WL.init = function (properties) {
@@ -5818,7 +5829,7 @@ var FilePickerOperation = null;
 
             var getItemProperties = {
                 path: generateSharingLinks ?
-                    "drives/" + "-7592275166240781166" /*ownerCid*/ + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
+                    "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
                 method: HTTP_METHOD_GET,
                 use_vroom_api: generateSharingLinks,
                 interface_method: op._props[API_INTERFACE_METHOD]
