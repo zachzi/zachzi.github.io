@@ -383,7 +383,7 @@ OneDriveApp.prototype = {
 
                         var accessToken = internalApp.getAccessTokenForApi();
                         var urlUploadProperties = {
-                            path: "drives/" + /*pickerResponse.owner_cid*/ "-7592275166240781166" + "/items/" + vroomFolderId + "/children",
+                            path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
                             request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
@@ -462,7 +462,7 @@ OneDriveApp.prototype = {
 
         var that = this;
         var pollingInterval = POLLING_INTERVAL;
-        var pollCount = 5;
+        var pollCount = POLLING_COUNTER;
 
         var progressApiProperties = {
             path: appendUrlParameters(location, { access_token: accessToken }),
@@ -484,7 +484,7 @@ OneDriveApp.prototype = {
                             // Exponential backoff on polling to prevent DOSing the service.
                             if (!pollCount--) {
                                 pollingInterval *= 2;
-                                pollCount = 5;
+                                pollCount = POLLING_COUNTER;
                             }
 
                             // Upload not yet completed, so continue polling. 
@@ -3205,6 +3205,7 @@ var FILEDIALOG_PARAM_AUTH = "auth",
  */
 var KEYCODE_ESC = 27,
     POLLING_INTERVAL = 1000 /* 1 second in milliseconds */,
+    POLLING_COUNTER = 5;
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
     VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
