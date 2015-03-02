@@ -2010,7 +2010,7 @@ UploadOperation.prototype = {
  * Is of the form PERMISSION_TYPE.ACCESS_LEVEL:PICKER_TYPE|SELECTION_TYPE|LINK_TYPE:RESOURCE_ID!AUTH_KEY
  * Where RESOURCE_ID is the id of the item that the user has granted the application access to.
  */
-var scopeResponsePattern = new RegExp("^\\w+\\.\\w+:\\w+[\\|\\w+]+:([\\d\\w]+\\!\\d+)(?:\\!([\\d\\w]+))*");
+var scopeResponsePattern = new RegExp("^\\w+\\.\\w+:\\w+[\\|\\w+]+:([\\w]+\\!\\d+)(?:\\!(.+))*");
 
 function stringTrim(value) {
     return value.replace(/^\s+|\s+$/g, "");
@@ -5585,8 +5585,6 @@ var FilePickerOperation = null;
                         return;
                 }
 
-                scope += " " + SCOPE_SIGNIN;
-
                 var interfaceMethod = op._props[API_INTERFACE_METHOD],
                     TICKET_VALID_PERIOD = 650; // seconds
 
@@ -5605,7 +5603,8 @@ var FilePickerOperation = null;
                             op._onComplete(resp);
                         });
                 }
-                else {      
+                else {
+                    scope += " " + SCOPE_SIGNIN;
                     wl_app.ensurePermission(scope, TICKET_VALID_PERIOD, interfaceMethod, op._authDelegate);
                 }
             }
