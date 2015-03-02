@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.8617.2002
+// WL.JS Version 5.5.8702.2002
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -5566,7 +5566,7 @@ var FilePickerOperation = null;
                 op._changeState(FILE_PICKER_OP_AUTHREADY);
             }
             else {
-                var scope = "";
+                var scope;
                 switch (op._props[FILEDIALOG_PARAM_MODE]) {
                     case FILEDIALOG_PARAM_MODE_OPEN:
                         scope = SCOPE_SKYDRIVE;
@@ -5584,6 +5584,8 @@ var FilePickerOperation = null;
                         op._onComplete(createErrorResponse(ERROR_INVALID_REQUEST, message));
                         return;
                 }
+
+                scope += " " + SCOPE_SIGNIN;
 
                 var interfaceMethod = op._props[API_INTERFACE_METHOD],
                     TICKET_VALID_PERIOD = 650; // seconds
@@ -5603,8 +5605,7 @@ var FilePickerOperation = null;
                             op._onComplete(resp);
                         });
                 }
-                else {
-                    scope += " " + SCOPE_SIGNIN;
+                else {      
                     wl_app.ensurePermission(scope, TICKET_VALID_PERIOD, interfaceMethod, op._authDelegate);
                 }
             }
@@ -6936,7 +6937,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8617.2002");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8702.2002");
 
         wl_app.testInit = function(properties) {
 
