@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.8702.2002
+// WL.JS Version 5.5.8815.2003
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -386,7 +386,7 @@ OneDriveApp.prototype = {
                             path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
-                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
+                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }, { name: API_PARAM_APPLICATION, value: internalApp._appId }],
                             response_headers: [API_PARAM_LOCATION],
                             json_body: {
                                 "@content.sourceUrl": file,
@@ -622,6 +622,7 @@ var API_DOWNLOAD = "download",
     API_INTERFACE_METHOD = "interface_method",
     API_JSONP_CALLBACK_NAMESPACE_PREFIX = "WL.Internal.jsonp.",
     API_JSONP_URL_LIMIT = 2000,
+    API_PARAM_APPLICATION = "Application",
     API_PARAM_AUTH = "Authorization",
     API_PARAM_BODY = "body",
     API_PARAM_BODY_JSON = "json_body",
@@ -2379,7 +2380,11 @@ function parseUri(url) {
 
     if (scheme != "") {
         var urlPart = url.substring(scheme.length + 2),
-            hostEnd = urlPart.indexOf("/"),
+            firstSlash = coalesceToInfinity(urlPart.indexOf("/")),
+            backSlash = coalesceToInfinity(urlPart.indexOf("\\")),
+            queryStart = coalesceToInfinity(urlPart.indexOf("?")),
+            fragStart = coalesceToInfinity(urlPart.indexOf("#")),
+            hostEnd = coalesceToNegative(Math.min(firstSlash, backSlash, queryStart, fragStart)), 
             hostPortStr = (hostEnd > 0) ? urlPart.substring(0, hostEnd) : urlPart,
             hostport = hostPortStr.split(":"),
             host = hostport[0],
@@ -2391,6 +2396,24 @@ function parseUri(url) {
     }
 
     return { scheme: scheme, host: host, port: port, path: path };
+}
+
+function coalesceToInfinity(value)
+{
+    if (value == -1) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    return value;
+}
+
+function coalesceToNegative(value)
+{
+    if (value == Number.POSITIVE_INFINITY) {
+        return -1;
+    }
+
+    return value;
 }
 
 function getDomainName(url) {
@@ -3203,7 +3226,8 @@ var FILEDIALOG_PARAM_AUTH = "auth",
 /**
  * Miscellaneous
  */
-var KEYCODE_ESC = 27,
+var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
+    KEYCODE_ESC = 27,
     POLLING_INTERVAL = 1000 /* 1 second in milliseconds */,
     POLLING_COUNTER = 5;
     ONEDRIVE_PREFIX = "[OneDrive]",
@@ -3603,7 +3627,9 @@ function handlePageAction() {
 
         if (display === DISPLAY_TOUCH && wl_app._browser.ie) {
             // For mobile IE, we do navigation.
-            document.location = pageState[AK_REDIRECT_URI];
+            var redirLocation = pageState[AK_REDIRECT_URI];
+            validateRedirectUrl(redirLocation);
+            document.location = redirLocation;
         } else {
             // For popup window, we close it.
             window.close();
@@ -3621,6 +3647,31 @@ function handlePageAction() {
         if (appInit && (typeof (appInit) === TYPE_FUNCTION)) {
             appInit.call();
         }
+    }
+}
+
+// ensure the url is an absolute http(s) url with
+// a matching domain to the current one, or a sub-domain.
+function validateRedirectUrl(url) {
+    if (url != null) {
+        var uri = new Uri(url);
+        if (uri.scheme != "") {
+            var currentHost = window.location.host;
+            var redirHost = uri.host;
+            if (redirHost == currentHost) {
+                // the hosts match exactly
+                return;
+            }
+
+            // for non-matching hosts, only allow it if the redirect url is a subdomain
+            currentHost = '.' + currentHost;
+            if (redirHost.indexOf(currentHost, redirHost.length - currentHost.length) !== -1) {
+                return;
+            }
+        }
+        
+        // all other cases fail
+        throw new Error(ERROR_DESC_REDIRECTURI_INVALID_WWA.replace("WL.init", "WL.login"));
     }
 }
 
@@ -5588,8 +5639,7 @@ var FilePickerOperation = null;
                 var interfaceMethod = op._props[API_INTERFACE_METHOD],
                     TICKET_VALID_PERIOD = 650; // seconds
 
-                if (isExternalFlow)
-                {
+                if (isExternalFlow) {
                     wl_app.login({ 
                         scope: scope,
                         external_consent: true 
@@ -5829,12 +5879,16 @@ var FilePickerOperation = null;
             }
 
             var getItemProperties = {
-                path: generateSharingLinks ?
-                    "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey : resourceId + "/files",
+                path: resourceId + "/files",
                 method: HTTP_METHOD_GET,
-                use_vroom_api: generateSharingLinks,
                 interface_method: op._props[API_INTERFACE_METHOD]
             };
+
+            if (generateSharingLinks) {
+                getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey;
+                getItemProperties.request_headers = [{ name: API_PARAM_APPLICATION, value: wl_app._appId }];
+                getItemProperties.use_vroom_api = true;
+            }
 
             // The file dialog will pass back an id to the sharing bundle
             // representing the user's selection. To get the contents
@@ -6090,6 +6144,13 @@ UploadOperation.prototype._getStrategy = function (properties) {
         }
 
         var fileInput = element.files[0];
+
+        if (fileInput.size > FORM_UPLOAD_SIZE_LIMIT) {
+            throw createInvalidParamValue(
+                    API_PARAM_ELEMENT,
+                    interfaceMethod,
+                    "Max supported file size for form uploads is 100MB.");
+        }
 
         // If the caller supplied a file name, use that, otherwise get the file name from the input element.
         self.setFileName(fileName || fileInput.name);
@@ -6936,7 +6997,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8702.2002");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8815.2003");
 
         wl_app.testInit = function(properties) {
 
