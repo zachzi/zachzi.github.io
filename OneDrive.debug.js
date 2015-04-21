@@ -386,7 +386,7 @@ OneDriveApp.prototype = {
                             path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
-                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }, { name: API_PARAM_APPLICATION, value: internalApp._appId }],
+                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }/*, { name: API_PARAM_APPLICATION, value: internalApp._appId }*/],
                             response_headers: [API_PARAM_LOCATION],
                             json_body: {
                                 "@content.sourceUrl": file,
@@ -5886,7 +5886,7 @@ var FilePickerOperation = null;
 
             if (generateSharingLinks) {
                 getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey;
-                getItemProperties.request_headers = [{ name: API_PARAM_APPLICATION, value: wl_app._appId }];
+                /*getItemProperties.request_headers = [{ name: API_PARAM_APPLICATION, value: wl_app._appId }];*/
                 getItemProperties.use_vroom_api = true;
             }
 
