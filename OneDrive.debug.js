@@ -2496,7 +2496,7 @@ function invokeCallback(callback, resp, synchronous, logError) {
         }
         catch (err) {
             if (logError) {
-                logError(JSON.stringify(error));
+                logError(JSON.stringify(err));
             }
 
             throw err;
