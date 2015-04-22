@@ -3045,6 +3045,12 @@ Promise.prototype = {
                 }
                 catch (err) {
                     if (isPromiseCompleted) {
+                        if (!chainedPromise._listeners.length) {
+                            while (chainedPromise._uplinkPromise) {
+                                chainedPromise = chainedPromise._uplinkPromise;
+                            }
+                        }
+                        
                         // The the callback throws an error, that should be forwarded to the chained promise.
                         chainedPromise.onError(
                             createExceptionResponse(currentPromise._getName(), event, err)
