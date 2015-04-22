@@ -5927,10 +5927,10 @@ var FilePickerOperation = null;
             if (generateSharingLinks) {
                 getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey;
                 getItemProperties.use_vroom_api = true;
-                getItemProperties.request_headers = [
+                /*getItemProperties.request_headers = [
                     { name: API_PARAM_APPLICATION, value: wl_app._appId },
                     { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version) }
-                ];
+                ];*/
             }
 
             // The file dialog will pass back an id to the sharing bundle
