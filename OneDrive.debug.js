@@ -2489,13 +2489,13 @@ function invokeCallbackSynchronous(callback, resp) {
     invokeCallback(callback, resp, true /* synchronous */, true /* log error */);
 }
 
-function invokeCallback(callback, resp, synchronous, logError) {
+function invokeCallback(callback, resp, synchronous, shouldLogError) {
     function doCallback() {
         try {
             (resp !== undefined) ? callback(resp) : callback();
         }
         catch (err) {
-            if (logError) {
+            if (shouldLogError) {
                 logError(JSON.stringify(err));
             }
 
