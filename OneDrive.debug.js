@@ -287,13 +287,29 @@ OneDriveApp.prototype = {
                 for (var i = 0; i < pickerFiles.length; i++) {
                     var file = pickerFiles[i];
                     var thumbnails = [];
+                    var fileLink;
+                    var fileThumbnails;
+
+                    if (isDownloadLinkType) {
+                        fileLink = file.source;
+                        fileThumbnails = file.images;
+                    }
+                    else {
+                        fileLink = file.webUrl;
+                        fileThumbnails = file.thumbnails && file.thumbnails[0];
+                    }
 
                     // Filter file thumbnails.
-                    var fileThumbnails = isDownloadLinkType ? file.images : file.thumbnails && file.thumbnails[0];
                     if (fileThumbnails) {
                         if (isDownloadLinkType) {
                             for (var j = 0; j < fileThumbnails.length; j++) {
-                                thumbnails.push(fileThumbnails[j].source);
+                                var thumbnailSource = fileThumbnails[j].source;
+
+                                // One of the thumbnails will just be the link to the file, so we don't 
+                                // want to include that again.
+                                if (thumbnailSource !== fileLink) {
+                                    thumbnails.push(fileThumbnails[j].source);
+                                }
                             }
                         } 
                         else {
@@ -306,14 +322,14 @@ OneDriveApp.prototype = {
                     // File data returned to the app.
                     files.values.push({
                         fileName: file.name,
-                        link: isDownloadLinkType ? file.source : file.webUrl,
+                        link: fileLink,
                         linkType: linkType,
                         size: file.size,
                         thumbnails: thumbnails
                     });
                 }
 
-                success(files);
+                invokeCallbackSynchronous(success, files);
             },
             // Error callback.
             function (fileDialogError) {
@@ -386,7 +402,7 @@ OneDriveApp.prototype = {
                             path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
-                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }/*, { name: API_PARAM_APPLICATION, value: internalApp._appId }*/],
+                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
                             response_headers: [API_PARAM_LOCATION],
                             json_body: {
                                 "@content.sourceUrl": file,
@@ -649,12 +665,14 @@ var API_DOWNLOAD = "download",
     API_PARAM_PRETTY = "pretty",
     API_PARAM_RESPOND_ASYNC = "respond-async",
     API_PARAM_RESULT = "result",
+    API_PARAM_SDK_VERSION = "SDK-Version",
     API_PARAM_STATUS = "status",
     API_PARAM_STATUS_HTTP = "http_status",
     API_PARAM_SSLRESOURCE = "return_ssl_resources",
     API_PARAM_STREAMINPUT = "stream_input",
     API_PARAM_TRACING = "tracing",
     API_PARAM_VROOMAPI = "use_vroom_api",
+    API_PARAM_X_REQUESTSTATS = "X-RequestStats",
     API_STATUS_ERROR = "error",
     API_STATUS_HTTP_ACCEPTED = 202,
     API_STATUS_HTTP_OK = 200,
@@ -2040,6 +2058,14 @@ function stringFormat() {
 }
 
 /**
+ * Helper function to left pad CIDs with leading zeros if they are less than 16 characters.
+ */
+var cidPadding = "0000000000000000";
+function leftPadCid(cid) {
+    return cidPadding.substring(0, cidPadding.length - cid.length) + cid;
+}
+
+/**
  * Aggressively encodes a string to be displayed in the browser. All non-letter characters are converted
  * to their Unicode entity ref, e.g. &#65;, period, space, comma, and dash are left un-encoded as well.
  * Usage: _divElement.innerHTML =_someValue.encodeHtml());
@@ -2460,24 +2486,31 @@ function getFileNameFromUrl(url) {
 }
 
 function invokeCallbackSynchronous(callback, resp) {
-    if (typeof (callback) == TYPE_FUNCTION) {
-        (resp !== undefined) ? callback(resp) : callback();      
-    }
+    invokeCallback(callback, resp, true /* synchronous */, true /* log error */);
 }
 
-function invokeCallback(callback, resp, synchronous, state) {
-    if (typeof (callback) == TYPE_FUNCTION) {
-        if (state) {
-            resp[AK_STATE] = state;
+function invokeCallback(callback, resp, synchronous, logError) {
+    function doCallback() {
+        try {
+            (resp !== undefined) ? callback(resp) : callback();
         }
+        catch (err) {
+            if (logError) {
+                logError(JSON.stringify(error));
+            }
 
+            throw err;
+        }
+    }
+
+    if (typeof (callback) == TYPE_FUNCTION) {
         if (synchronous) {
-            callback(resp);
+            doCallback();
         }
         else {
             delayInvoke(
                 function () {
-                    callback(resp); 
+                    doCallback();
                 }
             );
         }
@@ -3044,14 +3077,8 @@ Promise.prototype = {
                     }
                 }
                 catch (err) {
-                    if (isPromiseCompleted) {
-                        if (!chainedPromise._listeners.length) {
-                            while (chainedPromise._uplinkPromise) {
-                                chainedPromise = chainedPromise._uplinkPromise;
-                            }
-                        }
-                        
-                        // The the callback throws an error, that should be forwarded to the chained promise.
+                    if (isPromiseCompleted) { 
+                        // The callback throws an error, that should be forwarded to the chained promise.
                         chainedPromise.onError(
                             createExceptionResponse(currentPromise._getName(), event, err)
                         );
@@ -5108,9 +5135,16 @@ AuthSession.prototype = {
                         var rawResult = result[1].split("_"),
                             selectionString = rawResult[0];
 
-                        itemId = rawResult[1];
-                        ownerCid = itemId.split("!")[0];
+                        var rawItemId = rawResult[1];
+                        var splitIndex = rawItemId.indexOf("!");
+                        var rawItemIdPart1 = rawItemId.substring(0, splitIndex);
+                        var rawItemIdPart2 = rawItemId.substring(splitIndex);
+
+                        ownerCid = leftPadCid(rawItemIdPart1);
+                        itemId = ownerCid + rawItemIdPart2;
+
                         resourceId = [selectionString, ownerCid, itemId].join(".");
+
                         authKey = result[2];
                     }
                     else {
@@ -5892,8 +5926,11 @@ var FilePickerOperation = null;
 
             if (generateSharingLinks) {
                 getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey;
-                /*getItemProperties.request_headers = [{ name: API_PARAM_APPLICATION, value: wl_app._appId }];*/
                 getItemProperties.use_vroom_api = true;
+                getItemProperties.request_headers = [
+                    { name: API_PARAM_APPLICATION, value: wl_app._appId },
+                    { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version) }
+                ];
             }
 
             // The file dialog will pass back an id to the sharing bundle
@@ -7043,6 +7080,8 @@ wl_app._locale = "en";
 
         wl_app._settings = 
         {
+            sdk_version: "js-v1.0",
+
             PROD: prodSettings,
             DF: dfSettings,
             INT: intSettings,
