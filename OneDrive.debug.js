@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.8822.2002
+// WL.JS Version 5.5.8822.2003
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -402,7 +402,12 @@ OneDriveApp.prototype = {
                             path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
                             use_vroom_api: true,
-                            request_headers: [{ name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC }, { name: API_PARAM_AUTH, value: "bearer " + accessToken }],
+                            request_headers: [
+                                { name: API_PARAM_PREFER, value: API_PARAM_RESPOND_ASYNC },
+                                { name: API_PARAM_AUTH, value: "bearer " + accessToken },
+                                { name: API_PARAM_APPLICATION, value: internalApp._appId },
+                                { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, internalApp._settings.sdk_version) }
+                            ],
                             response_headers: [API_PARAM_LOCATION],
                             json_body: {
                                 "@content.sourceUrl": file,
@@ -638,6 +643,7 @@ var API_DOWNLOAD = "download",
     API_INTERFACE_METHOD = "interface_method",
     API_JSONP_CALLBACK_NAMESPACE_PREFIX = "WL.Internal.jsonp.",
     API_JSONP_URL_LIMIT = 2000,
+    API_PARAM_APPLICATION = "Application",
     API_PARAM_AUTH = "Authorization",
     API_PARAM_BODY = "body",
     API_PARAM_BODY_JSON = "json_body",
@@ -664,12 +670,14 @@ var API_DOWNLOAD = "download",
     API_PARAM_PRETTY = "pretty",
     API_PARAM_RESPOND_ASYNC = "respond-async",
     API_PARAM_RESULT = "result",
+    API_PARAM_SDK_VERSION = "SDK-Version",
     API_PARAM_STATUS = "status",
     API_PARAM_STATUS_HTTP = "http_status",
     API_PARAM_SSLRESOURCE = "return_ssl_resources",
     API_PARAM_STREAMINPUT = "stream_input",
     API_PARAM_TRACING = "tracing",
     API_PARAM_VROOMAPI = "use_vroom_api",
+    API_PARAM_X_REQUESTSTATS = "X-RequestStats",
     API_STATUS_ERROR = "error",
     API_STATUS_HTTP_ACCEPTED = 202,
     API_STATUS_HTTP_OK = 200,
@@ -677,7 +685,7 @@ var API_DOWNLOAD = "download",
     API_STATUS_SUCCESS = "success",
     API_SUPPRESS_REDIRECTS = "suppress_redirects",
     API_SUPPRESS_RESPONSE_CODES = "suppress_response_codes",
-    API_X_HTTP_LIVE_LIBRARY = "x_http_live_library";    
+    API_X_HTTP_LIVE_LIBRARY = "x_http_live_library";
 
 /**
  * Application status values indicating whether the app has invoked WL.init(...).
@@ -5922,6 +5930,10 @@ var FilePickerOperation = null;
             if (generateSharingLinks) {
                 getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey;
                 getItemProperties.use_vroom_api = true;
+                getItemProperties.request_headers = [
+                    { name: API_PARAM_APPLICATION, value: wl_app._appId },
+                    { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version) }
+                ];
             }
 
             // The file dialog will pass back an id to the sharing bundle
@@ -7031,7 +7043,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8822.2002");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8822.2003");
 
         wl_app.testInit = function(properties) {
 
