@@ -126,11 +126,15 @@
 
             $("#save").click(function(){
                 var file;
-                var urlInput = $("#url-upload")[0];
+                var contentUrlInput = $("#content-url-upload")[0];
+                var dataUrlInput = $("#data-url-upload")[0];
                 var nameInput = $("#file-name")[0];
                 
-                if(urlInput.checked) {
-                    file = $("#url-text")[0].value;
+                if(contentUrlInput.checked) {
+                    file = $("#content-url-text")[0].value;
+                }
+                else if(dataUrlInput.checked) {
+                    file = $("#data-url-text")[0].value;
                 }
                 else if($("#form-upload")[0].checked) {
                     file = "file";
