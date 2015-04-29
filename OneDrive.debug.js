@@ -432,7 +432,7 @@ OneDriveApp.prototype = {
                         internalApp.api(urlUploadProperties).then(
                             // Success callback.
                             function (urlUploadResponse) {
-                                var status = urlUploadResponse[API_PARAM_STATUS];
+                                var status = urlUploadResponse[API_PARAM_STATUS_HTTP];
                                 if (status === API_STATUS_HTTP_CREATED && uploadType === UPLOADTYPE_DATA_URL) {
                                     // Data URL upload succeeded.
                                     invokeCallbackSynchronous(success);
