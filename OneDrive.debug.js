@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.8822.2003
+// WL.JS Version 5.5.8828.2004
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -68,7 +68,7 @@ OneDrive.save = function(options) {
         app.executeSaveOperation();
     }
     catch (error) {
-        app.processErrorCallback(error, ERROR_DESC_OPERATION_UNHANDLED_EXCEPTION);
+        app.processError(error, ERROR_DESC_OPERATION_UNHANDLED_EXCEPTION);
     }
 };
 
@@ -146,7 +146,7 @@ OneDrive.createSaveButton = function(options) {
         return saveButton;
     }
     catch (error) {
-        app.processErrorCallback(error, ERROR_DESC_OPERATION_UNHANDLED_EXCEPTION);
+        app.processError(error, ERROR_DESC_OPERATION_UNHANDLED_EXCEPTION);
         return null;
     }
 };
@@ -352,8 +352,8 @@ OneDriveApp.prototype = {
         var method = that._method;
 
         // Determine upload type and validate properties. Due to the URL detection,
-        // the form element id can not start with "http://" or "https://", or it will
-        // be interpreted as a URL.
+        // the form element id can not start with "http://","https://", "data:", or 
+        // it will be interpreted as a URL.
         var file = options[ONEDRIVE_PARAM_FILE];
         var fileName = options[ONEDRIVE_PARAM_FILENAME];
         var uploadType = UPLOADTYPE_FORM;
@@ -364,6 +364,16 @@ OneDriveApp.prototype = {
 
             // If the file name is not supplied to the SDK, try to parse it from the URL.
             fileName = fileName || getFileNameFromUrl(file);
+        }
+        else if (isPathDataUrl(file)) {
+            // Upload from data URL scenario.
+            uploadType = UPLOADTYPE_DATA_URL;
+
+            // Since file names aren't included in data URLs, the app must provide a file
+            // name to the SDK.
+            if (!fileName) {
+                throw createMissingParamError(ONEDRIVE_PARAM_FILENAME, method);
+            }
         }
 
         // Callbacks
@@ -389,6 +399,7 @@ OneDriveApp.prototype = {
                 var folderId = apiResponse.data && apiResponse.data[0].id;
 
                 switch (uploadType) {
+                    case UPLOADTYPE_DATA_URL:
                     case UPLOADTYPE_URL:
                         // Folder ID comes in the format from LiveConnect: folder.{cid}.{cid}!{itemId} 
                         // -> for vroom we only want {cid}!{itemId}. If the folder is the root, then the
@@ -421,13 +432,19 @@ OneDriveApp.prototype = {
                         internalApp.api(urlUploadProperties).then(
                             // Success callback.
                             function (urlUploadResponse) {
-                                // URL to poll for status on remote upload.
-                                var location = urlUploadResponse[API_PARAM_LOCATION];
-
-                                // Started remote upload.
-                                (urlUploadResponse[API_PARAM_STATUS_HTTP] === API_STATUS_HTTP_ACCEPTED && !stringIsNullOrEmpty(location)) ?
-                                    that.beginPolling(success, progress, location, accessToken) :
+                                var status = urlUploadResponse[API_PARAM_STATUS];
+                                if (status === API_STATUS_HTTP_CREATED && uploadType === UPLOADTYPE_DATA_URL) {
+                                    // Data URL upload succeeded.
+                                    invokeCallbackSynchronous(success);
+                                }
+                                else if (status === API_STATUS_HTTP_ACCEPTED && uploadType === UPLOADTYPE_URL) {
+                                    // Start remote upload.
+                                    that.beginPolling(success, progress, urlUploadResponse[API_PARAM_LOCATION], accessToken);
+                                }
+                                else {
+                                    // Upload failed.
                                     that.processErrorCallback(urlUploadResponse, ERROR_DESC_OPERATION_UPLOAD);
+                                }
                             },
                             // Error callback.
                             function (urlUploadError) {
@@ -680,6 +697,7 @@ var API_DOWNLOAD = "download",
     API_PARAM_X_REQUESTSTATS = "X-RequestStats",
     API_STATUS_ERROR = "error",
     API_STATUS_HTTP_ACCEPTED = 202,
+    API_STATUS_HTTP_CREATED = 201,
     API_STATUS_HTTP_OK = 200,
     API_STATUS_HTTP_SERVERERROR = 500,
     API_STATUS_SUCCESS = "success",
@@ -2253,6 +2271,10 @@ function isPathFullUrl(path) {
     return path.indexOf("https://") === 0 || path.indexOf("http://") === 0;
 }
 
+function isPathDataUrl(path) {
+    return path.indexOf("data:") === 0;
+}
+
 function trace(text) {
     if (wl_app._traceEnabled) {
         writeLog(text);
@@ -2301,7 +2323,6 @@ function createHiddenElement(tagName) {
 }
 
 function createUniqueElementId() {
-
     var id = null;
 
     while (id == null) {
@@ -3219,7 +3240,8 @@ var ONEDRIVE_PARAM_CANCEL = "cancel",
 /**
  * Upload operations.
  */
-var UPLOADTYPE_URL = "from_url",
+var UPLOADTYPE_URL = "content_url",
+    UPLOADTYPE_DATA_URL = "data_url",
     UPLOADTYPE_FORM = "form";
 
 /**
@@ -7043,7 +7065,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8822.2003");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8828.2004");
 
         wl_app.testInit = function(properties) {
 
