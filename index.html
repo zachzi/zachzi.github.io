@@ -106,28 +106,7 @@
     <script>
         window.onload = function(){
             $("#open").click(function(){
-                WL.init({ client_id: "0000000040125824" });
-
-                WL.fileDialog({
-                    mode: 'open',
-                    select: 'single'
-                }).then(
-                    function(response) {
-                        log("The following file is being downloaded:");
-                        log("");
-            
-                        var files = response.data.files;
-                        for (var i = 0; i < files.length; i++) {
-                            var file = files[i];
-                            log(file.name);
-                            WL.download({ "path": file.id + "/content" });
-                        }
-                    },
-                    function(errorResponse) {
-                        log("WL.fileDialog errorResponse = " + JSON.stringify(errorResponse));
-                    }
-                );
-                /*var multiSelectChecked = $("#multiSelect")[0].checked;
+                var multiSelectChecked = $("#multiSelect")[0].checked;
                 var downloadChecked = $("#downloadLink")[0].checked;
                 
                 var options = {
@@ -142,7 +121,7 @@
                     }
                 };
 
-                OneDrive.open(options);*/
+                OneDrive.open(options);
             });
 
             $("#save").click(function(){
