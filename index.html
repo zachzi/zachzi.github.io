@@ -108,36 +108,25 @@
             $("#open").click(function(){
                 WL.init({ client_id: "0000000040125824" });
 
-                WL.login({ "scope": "wl.skydrive wl.signin" }).then(
+                WL.fileDialog({
+                    mode: 'open',
+                    select: 'single'
+                }).then(
                     function(response) {
-                        openFromSkyDrive();
+                        log("The following file is being downloaded:");
+                        log("");
+            
+                        var files = response.data.files;
+                        for (var i = 0; i < files.length; i++) {
+                            var file = files[i];
+                            log(file.name);
+                            WL.download({ "path": file.id + "/content" });
+                        }
                     },
-                    function(response) {
-                        log("Failed to authenticate.");
+                    function(errorResponse) {
+                        log("WL.fileDialog errorResponse = " + JSON.stringify(errorResponse));
                     }
                 );
-                
-                function openFromSkyDrive() {
-                    WL.fileDialog({
-                        mode: 'open',
-                        select: 'single'
-                    }).then(
-                        function(response) {
-                            log("The following file is being downloaded:");
-                            log("");
-                
-                            var files = response.data.files;
-                            for (var i = 0; i < files.length; i++) {
-                                var file = files[i];
-                                log(file.name);
-                                WL.download({ "path": file.id + "/content" });
-                            }
-                        },
-                        function(errorResponse) {
-                            log("WL.fileDialog errorResponse = " + JSON.stringify(errorResponse));
-                        }
-                    );
-                }
                 /*var multiSelectChecked = $("#multiSelect")[0].checked;
                 var downloadChecked = $("#downloadLink")[0].checked;
                 
