@@ -5938,7 +5938,7 @@ var FilePickerOperation = null;
             }
             else {
                 getItemProperties.path = "drive/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN;
-                getItemProperties.request_headers.push({ name: API_PARAM_AUTH, value: "bearer " + op._props[AK_ACCESS_TOKEN] });
+                getItemProperties.request_headers.push({ name: API_PARAM_AUTH, value: "bearer " + wl_app.getAccessTokenForApi() });
             }
 
             // The file dialog will pass back an id to the sharing bundle
@@ -6511,7 +6511,6 @@ function XhrUploadStrategy(operation, uploadSource) {
     /// <summary>
     /// Performs an upload via an XMLHttpRequest.
     /// </summary>
-
     this.upload = function (requestUrl) {
         var reader = null;
 
