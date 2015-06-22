@@ -5933,13 +5933,9 @@ var FilePickerOperation = null;
                 ]
             };
 
-            if (generateSharingLinks) {
-                getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN + "&authkey=" + authKey;
-            }
-            else {
-                getItemProperties.path = "drive/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN;
-                getItemProperties.request_headers.push({ name: API_PARAM_AUTH, value: "bearer " + wl_app.getAccessTokenForApi() });
-            }
+            getItemProperties.path = generateSharingLinks ?
+                "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN + "&authkey=" + authKey :
+                "drive/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN + "&access_token=" + wl_app.getAccessTokenForApi();
 
             // The file dialog will pass back an id to the sharing bundle
             // representing the user's selection. To get the contents
@@ -6186,7 +6182,7 @@ UploadOperation.prototype._getStrategy = function (properties) {
 
     // if the input element has a files property and there is FileReader type available, then the browser supports 
     // the file API and we will use that.
-    if (element.files && window.FileReader) {
+    /*if (element.files && window.FileReader) {
         if (element.files.length !== 1) {
             throw createInvalidParamValue(
                     API_PARAM_ELEMENT, 
@@ -6207,7 +6203,7 @@ UploadOperation.prototype._getStrategy = function (properties) {
         self.setFileName(fileName || fileInput.name);
 
         return new XhrUploadStrategy(self, fileInput);
-    }
+    }*/
 
     // if they did not specify a name on the input element, change it to
     // the proper name of "file".
