@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.8828.2004
+// WL.JS Version 5.5.9022.2003
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -279,43 +279,22 @@ OneDriveApp.prototype = {
                     values: []
                 };
 
-                var pickerFiles = isDownloadLinkType? 
-                    apiResponse.data : 
+                var pickerFiles = isDownloadLinkType ? 
+                    apiResponse.children :
                     (apiResponse.children && apiResponse.children.length > 0) ? apiResponse.children : [apiResponse];
 
                 // Filter API response files.
                 for (var i = 0; i < pickerFiles.length; i++) {
                     var file = pickerFiles[i];
                     var thumbnails = [];
-                    var fileLink;
-                    var fileThumbnails;
 
-                    if (isDownloadLinkType) {
-                        fileLink = file.source;
-                        fileThumbnails = file.images;
-                    }
-                    else {
-                        fileLink = file.webUrl;
-                        fileThumbnails = file.thumbnails && file.thumbnails[0];
-                    }
+                    var fileLink = isDownloadLinkType ? file["@content.downloadUrl"] : file.webUrl;
+                    var fileThumbnails = file.thumbnails && file.thumbnails[0];
 
                     // Filter file thumbnails.
                     if (fileThumbnails) {
-                        if (isDownloadLinkType) {
-                            for (var j = 0; j < fileThumbnails.length; j++) {
-                                var thumbnailSource = fileThumbnails[j].source;
-
-                                // One of the thumbnails will just be the link to the file, so we don't 
-                                // want to include that again.
-                                if (thumbnailSource !== fileLink) {
-                                    thumbnails.push(thumbnailSource);
-                                }
-                            }
-                        } 
-                        else {
-                            for (var j = 0; j < VROOM_THUMBNAIL_SIZES.length; j++) {
-                                thumbnails.push(fileThumbnails[VROOM_THUMBNAIL_SIZES[j]].url);
-                            }
+                        for (var j = 0; j < VROOM_THUMBNAIL_SIZES.length; j++) {
+                            thumbnails.push(fileThumbnails[VROOM_THUMBNAIL_SIZES[j]].url);
                         }
                     }
 
@@ -433,11 +412,11 @@ OneDriveApp.prototype = {
                             // Success callback.
                             function (urlUploadResponse) {
                                 var status = urlUploadResponse[API_PARAM_STATUS_HTTP];
-                                if (status === API_STATUS_HTTP_CREATED && uploadType === UPLOADTYPE_DATA_URL) {
+                                if (uploadType === UPLOADTYPE_DATA_URL && (status === API_STATUS_HTTP_CREATED || status === API_STATUS_HTTP_OK)) {
                                     // Data URL upload succeeded.
                                     invokeCallbackSynchronous(success);
                                 }
-                                else if (status === API_STATUS_HTTP_ACCEPTED && uploadType === UPLOADTYPE_URL) {
+                                else if (uploadType === UPLOADTYPE_URL && status === API_STATUS_HTTP_ACCEPTED) {
                                     // Start remote upload.
                                     that.beginPolling(success, progress, urlUploadResponse[API_PARAM_LOCATION], accessToken);
                                 }
@@ -3287,10 +3266,11 @@ var FILEDIALOG_PARAM_AUTH = "auth",
 var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
     KEYCODE_ESC = 27,
     POLLING_INTERVAL = 1000 /* 1 second in milliseconds */,
-    POLLING_COUNTER = 5;
+    POLLING_COUNTER = 5,
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
-    VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
+    VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"],
+    VROOM_EXPAND_CHILDREN = "$expand=thumbnails,children($expand=thumbnails)";
 
 WL.init = function (properties) {
     /// <summary>
@@ -5944,18 +5924,21 @@ var FilePickerOperation = null;
             }
 
             var getItemProperties = {
-                path: resourceId + "/files",
                 method: HTTP_METHOD_GET,
-                interface_method: op._props[API_INTERFACE_METHOD]
+                use_vroom_api: true,
+                interface_method: op._props[API_INTERFACE_METHOD],
+                request_headers: [
+                    { name: API_PARAM_APPLICATION, value: wl_app._appId },
+                    { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version) }
+                ]
             };
 
             if (generateSharingLinks) {
-                getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?$expand=thumbnails,children($expand=thumbnails)&authkey=" + authKey;
-                getItemProperties.use_vroom_api = true;
-                getItemProperties.request_headers = [
-                    { name: API_PARAM_APPLICATION, value: wl_app._appId },
-                    { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version) }
-                ];
+                getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN + "&authkey=" + authKey;
+            }
+            else {
+                getItemProperties.path = "drive/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN;
+                getItemProperties.request_headers.push({ name: API_PARAM_AUTH, value: "bearer " + op._props[AK_ACCESS_TOKEN] });
             }
 
             // The file dialog will pass back an id to the sharing bundle
@@ -7065,7 +7048,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.8828.2004");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.9022.2003");
 
         wl_app.testInit = function(properties) {
 
