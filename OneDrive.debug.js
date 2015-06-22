@@ -377,17 +377,18 @@ OneDriveApp.prototype = {
 
                 var folderId = apiResponse.data && apiResponse.data[0].id;
 
+                // Folder ID comes in the format from LiveConnect: folder.{cid}.{cid}!{itemId} 
+                // -> for vroom we only want {cid}!{itemId}. If the folder is the root, then the
+                // id will be folder.{cid} which is also invalid for vroom. In that case, we just
+                // want to use the string "root" for the folder ID.
+                var folderIdSplit = folderId.split(".");
+                var vroomFolderId = folderIdSplit.length > 2 ? folderIdSplit[2] : "root";
+
+                var accessToken = internalApp.getAccessTokenForApi();
+
                 switch (uploadType) {
                     case UPLOADTYPE_DATA_URL:
                     case UPLOADTYPE_URL:
-                        // Folder ID comes in the format from LiveConnect: folder.{cid}.{cid}!{itemId} 
-                        // -> for vroom we only want {cid}!{itemId}. If the folder is the root, then the
-                        // id will be folder.{cid} which is also invalid for vroom. In that case, we just
-                        // want to use the string "root" for the folder ID.
-                        var folderIdSplit = folderId.split(".");
-                        var vroomFolderId = folderIdSplit.length > 2 ? folderIdSplit[2] : "root";
-
-                        var accessToken = internalApp.getAccessTokenForApi();
                         var urlUploadProperties = {
                             path: "drives/" + pickerResponse.owner_cid + "/items/" + vroomFolderId + "/children",
                             method: HTTP_METHOD_POST, 
@@ -433,9 +434,17 @@ OneDriveApp.prototype = {
 
                         break;
                     case UPLOADTYPE_FORM:
+                        var uploadPath = folderId;
+                        var useVroom = false;
+                        if (canUseFileApi(file)) {
+                            uploadPath =
+                                getApiServiceUrl() + "drive/items/" + vroomFolderId + "/children/" + encodeURIComponent(fileName) + "/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
+                            useVroom = true;
+                        }
                         var formUploadProperties = {
-                            path: folderId,
+                            path: uploadPath,
                             element: file,
+                            use_vroom_api: useVroom,
                             overwrite: API_PARAM_OVERWRITE_RENAME,
                             file_name: fileName,
                             interface_method: method
@@ -1964,7 +1973,7 @@ UploadOperation.prototype = {
             path = props[API_PARAM_PATH];
 
         if (isPathFullUrl(path)) {
-            op._uploadPath = buildUploadFileUrlString(path);
+            op._uploadPath = props[API_PARAM_VROOMAPI] ? path : buildUploadFileUrlString(path);
             op._status = UPLOAD_OPSTATE_UPLOADREADY;
             op._process();
             return;
@@ -6152,7 +6161,8 @@ UploadOperation.prototype._getStrategy = function (properties) {
     var self = this,
         interfaceMethod = properties[API_INTERFACE_METHOD],
         element = properties[API_PARAM_ELEMENT],
-        fileName = properties[API_PARAM_FILENAME];
+        fileName = properties[API_PARAM_FILENAME],
+        useVroom = properties[API_PARAM_VROOMAPI];
 
     validateProperties(
        properties,
@@ -6182,7 +6192,7 @@ UploadOperation.prototype._getStrategy = function (properties) {
 
     // if the input element has a files property and there is FileReader type available, then the browser supports 
     // the file API and we will use that.
-    /*if (element.files && window.FileReader) {
+    if (canUseFileApi(Element)) {
         if (element.files.length !== 1) {
             throw createInvalidParamValue(
                     API_PARAM_ELEMENT, 
@@ -6202,8 +6212,8 @@ UploadOperation.prototype._getStrategy = function (properties) {
         // If the caller supplied a file name, use that, otherwise get the file name from the input element.
         self.setFileName(fileName || fileInput.name);
 
-        return new XhrUploadStrategy(self, fileInput);
-    }*/
+        return new XhrUploadStrategy(self, fileInput, useVroom);
+    }
 
     // if they did not specify a name on the input element, change it to
     // the proper name of "file".
@@ -6503,7 +6513,7 @@ var pollUploadResponseCookie = (function() {
 })();
 
 
-function XhrUploadStrategy(operation, uploadSource) {
+function XhrUploadStrategy(operation, uploadSource, useVroom) {
     /// <summary>
     /// Performs an upload via an XMLHttpRequest.
     /// </summary>
@@ -6523,6 +6533,12 @@ function XhrUploadStrategy(operation, uploadSource) {
             var data = evt.target.result;
             var xhr = new XMLHttpRequest();
             xhr.open(HTTP_METHOD_PUT, requestUrl, true);
+
+            if (useVroom) {
+                xhr.setRequestHeader(API_PARAM_CONTENTTYPE, "text/plain");
+                xhr.setRequestHeader(API_PARAM_APPLICATION, wl_app._appId);
+                xhr.setRequestHeader(API_PARAM_X_REQUESTSTATS, stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version));
+            }
 
             xhr.onload = function(e) {
                 operation.onResp(e.currentTarget.responseText);
@@ -6689,6 +6705,10 @@ function getClientIdFromDOM() {
         logError(stringFormat("Could not find element with id '{0}'.", DOM_ID_SDK), ONEDRIVE_PREFIX);
         return null;
     }
+}
+
+function canUseFileApi(element) {
+    return element.files && window.FileReader;
 }
 
 var ChannelManager = {
