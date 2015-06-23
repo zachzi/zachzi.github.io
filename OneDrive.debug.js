@@ -6520,7 +6520,7 @@ var pollUploadResponseCookie = (function() {
 })();
 
 
-function XhrUploadStrategy(operation, uploadSource, useVroom) {
+function XhrUploadStrategy(operation, uploadSource, useVroom, fileName) {
     /// <summary>
     /// Performs an upload via an XMLHttpRequest.
     /// </summary>
