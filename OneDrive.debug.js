@@ -5946,7 +5946,7 @@ var FilePickerOperation = null;
 
             var basePath, authParam;
             if (generateSharingLinks) {
-                basePath = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDRENANDTHUMBNAILS + "&authkey=" + authKey;
+                basePath = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDRENANDTHUMBNAILS;
                 authParam = { authKey: authKey };
             } else {
                 basePath = "drive/items/" + itemId + "/children?" +
