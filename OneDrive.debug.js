@@ -282,6 +282,9 @@ OneDriveApp.prototype = {
                 var pickerFiles = isDownloadLinkType ? 
                     apiResponse.children :
                     (apiResponse.children && apiResponse.children.length > 0) ? apiResponse.children : [apiResponse];
+                if (!pickerFiles) {
+                    throw new Error(stringFormat(ERROR_DESC_INVALID_FILEPICKER_RESPONSE, method, JSON.stringify(fileDialogResponse)));
+                }
 
                 // Filter API response files.
                 for (var i = 0; i < pickerFiles.length; i++) {
@@ -375,14 +378,10 @@ OneDriveApp.prototype = {
                 var pickerResponse = fileDialogResponse.pickerResponse;
                 var apiResponse = fileDialogResponse.apiResponse;
 
-                var folderId = apiResponse.data && apiResponse.data[0].id;
-
-                // Folder ID comes in the format from LiveConnect: folder.{cid}.{cid}!{itemId} 
-                // -> for vroom we only want {cid}!{itemId}. If the folder is the root, then the
-                // id will be folder.{cid} which is also invalid for vroom. In that case, we just
-                // want to use the string "root" for the folder ID.
-                var folderIdSplit = folderId.split(".");
-                var vroomFolderId = folderIdSplit.length > 2 ? folderIdSplit[2] : "root";
+                var folderId = apiResponse.children && apiResponse.children[0] && apiResponse.children[0].id;
+                if (!folderId || apiResponse.children.length !== 1) {
+                    throw new Error(stringFormat(ERROR_DESC_INVALID_FILEPICKER_RESPONSE, method, JSON.stringify(fileDialogResponse)));
+                }
 
                 var accessToken = internalApp.getAccessTokenForApi();
 
@@ -3237,6 +3236,7 @@ var UPLOADTYPE_URL = "content_url",
  */
 var ERROR_DESC_UPLOADTYPE_NOTIMPLEMENTED = "METHOD: This upload method is not implemented.",
     ERROR_DESC_GENERAL = "{0}: Operation: '{1}' Error message: {2}",
+    ERROR_DESC_INVALID_FILEPICKER_RESPONSE = "{0}: Invalid response from the file picker. Response: {1}",
     ERROR_DESC_OPERATION_API = "API call",
     ERROR_DESC_OPERATION_PICKER = "invoke picker",
     ERROR_DESC_OPERATION_UNHANDLED_EXCEPTION = "unhandled exception",
