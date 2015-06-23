@@ -433,14 +433,13 @@ OneDriveApp.prototype = {
 
                         break;
                     case UPLOADTYPE_FORM:
-                        var vroomPath = 
+                        var path = 
                             getApiServiceUrl(true /* use vroom api */) +
                                 "drive/items/" + folderId + "/children/" + encodeURIComponent(fileName) + "/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
                         var formUploadProperties = {
-                            path: folderId,
+                            path: path,
                             element: file,
                             use_vroom_api: true,
-                            vroom_path: vroomPath,
                             overwrite: API_PARAM_OVERWRITE_RENAME,
                             file_name: fileName,
                             interface_method: method
@@ -678,7 +677,6 @@ var API_DOWNLOAD = "download",
     API_PARAM_STREAMINPUT = "stream_input",
     API_PARAM_TRACING = "tracing",
     API_PARAM_VROOMAPI = "use_vroom_api",
-    API_PARAM_VROOMPATH = "vroom_path",
     API_PARAM_X_REQUESTSTATS = "X-RequestStats",
     API_STATUS_ERROR = "error",
     API_STATUS_HTTP_ACCEPTED = 202,
@@ -1970,7 +1968,7 @@ UploadOperation.prototype = {
             path = props[API_PARAM_PATH];
 
         if (isPathFullUrl(path)) {
-            op._uploadPath = buildUploadFileUrlString(path);
+            op._uploadPath = props[API_PARAM_VROOMAPI] ? path : buildUploadFileUrlString(path);
             op._status = UPLOAD_OPSTATE_UPLOADREADY;
             op._process();
             return;
@@ -2013,8 +2011,7 @@ UploadOperation.prototype = {
     },
 
     _upload: function () {
-        var op = this;
-        op._strategy.upload(op._uploadPath, op[API_PARAM_VROOMPATH]);
+        this._strategy.upload(this._uploadPath);
     },
 
     _complete: function () {
@@ -6214,6 +6211,12 @@ UploadOperation.prototype._getStrategy = function (properties) {
         return new XhrUploadStrategy(self, fileInput, useVroom);
     }
 
+    if (useVroom) {
+        // If we're using the new external consent picker and trying to call Vroom instead of LiveConnect,
+        // we can't fallback to the multi part form upload.
+        throw new Error(ERROR_DESC_BROWSER_ISSUE);
+    }
+
     // if they did not specify a name on the input element, change it to
     // the proper name of "file".
     if (element.name === "") {
@@ -6516,7 +6519,7 @@ function XhrUploadStrategy(operation, uploadSource, useVroom) {
     /// <summary>
     /// Performs an upload via an XMLHttpRequest.
     /// </summary>
-    this.upload = function (requestUrl, vroomRequestUrl) {
+    this.upload = function (requestUrl) {
         var reader = null;
 
         if (window.File && uploadSource instanceof window.File) {
@@ -6531,7 +6534,7 @@ function XhrUploadStrategy(operation, uploadSource, useVroom) {
         reader.onload = function(evt) {
             var data = evt.target.result;
             var xhr = new XMLHttpRequest();
-            xhr.open(HTTP_METHOD_PUT, useVroom ? vroomRequestUrl : requestUrl, true);
+            xhr.open(HTTP_METHOD_PUT, requestUrl, true);
 
             if (useVroom) {
                 xhr.setRequestHeader(API_PARAM_CONTENTTYPE, "text/plain");
