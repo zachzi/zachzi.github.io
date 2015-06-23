@@ -434,7 +434,8 @@ OneDriveApp.prototype = {
                         break;
                     case UPLOADTYPE_FORM:
                         var vroomPath = 
-                            getApiServiceUrl() + "drive/items/" + folderId + "/children/" + encodeURIComponent(fileName) + "/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
+                            getApiServiceUrl(true /* use vroom api */) +
+                                "drive/items/" + folderId + "/children/" + encodeURIComponent(fileName) + "/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
                         var formUploadProperties = {
                             path: folderId,
                             element: file,
