@@ -280,7 +280,7 @@ OneDriveApp.prototype = {
                 };
 
                 var pickerFiles = isDownloadLinkType ? 
-                    apiResponse.children :
+                    apiResponse.value :
                     (apiResponse.children && apiResponse.children.length > 0) ? apiResponse.children : [apiResponse];
                 if (!pickerFiles) {
                     throw new Error(stringFormat(ERROR_DESC_INVALID_FILEPICKER_RESPONSE, method, JSON.stringify(fileDialogResponse)));
@@ -379,8 +379,8 @@ OneDriveApp.prototype = {
                 var pickerResponse = fileDialogResponse.pickerResponse;
                 var apiResponse = fileDialogResponse.apiResponse;
 
-                var folderId = apiResponse.children && apiResponse.children[0] && apiResponse.children[0].id;
-                if (!folderId || apiResponse.children.length !== 1) {
+                var folderId = apiResponse.value && apiResponse.value[0] && apiResponse.value[0].id;
+                if (!folderId || apiResponse.value.length !== 1) {
                     throw new Error(stringFormat(ERROR_DESC_INVALID_FILEPICKER_RESPONSE, method, JSON.stringify(fileDialogResponse)));
                 }
 
