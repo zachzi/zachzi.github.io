@@ -5944,14 +5944,16 @@ var FilePickerOperation = null;
             };
 
             if (generateSharingLinks) {
-                getItemProperties.path =
-                    "drives/" + ownerCid + "/items/" + itemId + "?" + stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "webUrl") + "&authkey=" + authKey;
+                //getItemProperties.path =
+                //"drives/" + ownerCid + "/items/" + itemId + "?" + stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "webUrl") + "&authkey=" + authKey;
+                getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "/children?select=webUrl,name,size;expand=thumbnails&authkey=" + authKey;
             } else {
-                var vroomExpansion = op._props[API_PARAM_SAVESCENARIO] ?
-                    VROOM_EXPAND_CHILDREN :
-                    stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "@content.downloadUrl");
-
-                getItemProperties.path = "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
+                //var vroomExpansion = op._props[API_PARAM_SAVESCENARIO] ?
+                  //  VROOM_EXPAND_CHILDREN :
+                    //stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "@content.downloadUrl");
+                var blah = op._props[API_PARAM_SAVESCENARIO] ? "select=id" : "select=@content.downloadUrl,name,size;expand=thumbnails";
+                //getItemProperties.path = "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
+                getItemProperties.path = "drive/items/" + itemId + "/children?" + blah + "&access_token=" + wl_app.getAccessTokenForApi();
             }
 
             // The file dialog will pass back an id to the sharing bundle
@@ -6249,14 +6251,14 @@ UploadOperation.prototype._getStrategy = function (properties) {
         errorMessage = "It must be the only HTMLInputElement in its parent HTMLFormElement.";
     } else if (element.name !== DOM_FILE) {
         // the input element must be named file
-        // errorMessage = "Its name attribute must be set to \"file\" (i.e., <input name=\"file\" />).";
+        errorMessage = "Its name attribute must be set to \"file\" (i.e., <input name=\"file\" />).";
     }
 
     if (errorMessage !== null) {
         throw createInvalidParamValue(API_PARAM_ELEMENT, interfaceMethod, errorMessage);
     }
 
-    return new MultiPartFormUploadStrategy(self, element, interfaceMethod, useVroom);
+    return new MultiPartFormUploadStrategy(self, element, interfaceMethod);
 };
 
 /**
