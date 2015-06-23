@@ -3279,8 +3279,8 @@ var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
     VROOM_CONFLICTBEHAVIOR = "@name.conflictBehavior=rename",
-    VROOM_EXPAND_CHILDREN = "$expand=children",
-    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "$expand=thumbnails,children($expand=thumbnails)",
+    VROOM_EXPAND_CHILDREN = "expand=children",
+    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "expand=thumbnails,children(expand=thumbnails)",
     VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
 
 WL.init = function (properties) {
@@ -6244,7 +6244,7 @@ UploadOperation.prototype._getStrategy = function (properties) {
         errorMessage = "It must be the only HTMLInputElement in its parent HTMLFormElement.";
     } else if (element.name !== DOM_FILE) {
         // the input element must be named file
-        errorMessage = "Its name attribute must be set to \"file\" (i.e., <input name=\"file\" />).";
+        // errorMessage = "Its name attribute must be set to \"file\" (i.e., <input name=\"file\" />).";
     }
 
     if (errorMessage !== null) {
