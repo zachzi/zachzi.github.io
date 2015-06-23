@@ -434,11 +434,11 @@ OneDriveApp.prototype = {
 
                         break;
                     case UPLOADTYPE_FORM:
-                        var putPath =
-                            getApiServiceUrl(true /* use vroom api */) +
-                                "drive/items/" + folderId + "/children/{0}/content?" + VROOM_CONFLICTBEHAVIOR + "&access_token=" + accessToken;
+                        var path =
+                            getApiServiceUrl(true /* use vroom api */) + "drive/items/" + folderId + "/children/{0}/content?" + VROOM_CONFLICTBEHAVIOR;
+                        var pathWithAccessToken = appendUrlParameters(path, { access_token: accessToken });
                         var formUploadProperties = {
-                            path: putPath,
+                            path: pathWithAccessToken,
                             element: file,
                             use_vroom_api: true,
                             overwrite: API_PARAM_OVERWRITE_RENAME,
@@ -3278,8 +3278,9 @@ var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
     VROOM_CONFLICTBEHAVIOR = "@name.conflictBehavior=rename",
-    VROOM_EXPAND_CHILDREN = "expand=children(select=id)",
-    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "expand=thumbnails,children(select={0},name,size;expand=thumbnails)",
+    VROOM_EXPAND_THUMBNAILS = "select=id,@content.downloadUrl,name,size&expand=thumbnails",
+    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "select=id,webUrl,name,size&expand=thumbnails,children(select=id,webUrl,name,size;expand=thumbnails)",
+    VROOM_SELECT_ID = "select=id",
     VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
 
 WL.init = function (properties) {
@@ -5943,19 +5944,17 @@ var FilePickerOperation = null;
                 ]
             };
 
+            var basePath, authParam;
             if (generateSharingLinks) {
-                //getItemProperties.path =
-                //"drives/" + ownerCid + "/items/" + itemId + "?" + stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "webUrl") + "&authkey=" + authKey;
-                var blah = "select=id,webUrl,name,size&expand=thumbnails,children(select=id,webUrl,name,size;expand=thumbnails)";
-                getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?" + blah + "&authkey=" + authKey;
+                basePath = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDRENANDTHUMBNAILS + "&authkey=" + authKey;
+                authParam = { authKey: authKey };
             } else {
-                //var vroomExpansion = op._props[API_PARAM_SAVESCENARIO] ?
-                  //  VROOM_EXPAND_CHILDREN :
-                    //stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "@content.downloadUrl");
-                var blah = op._props[API_PARAM_SAVESCENARIO] ? "select=id" : "select=id,@content.downloadUrl,name,size&expand=thumbnails";
-                //getItemProperties.path = "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
-                getItemProperties.path = "drive/items/" + itemId + "/children?" + blah + "&access_token=" + wl_app.getAccessTokenForApi();
+                basePath = "drive/items/" + itemId + "/children?" +
+                    (op._props[API_PARAM_SAVESCENARIO] ? VROOM_SELECT_ID : VROOM_EXPAND_THUMBNAILS);
+                authParam = { access_token: wl_app.getAccessTokenForApi() };
             }
+
+            getItemProperties.path = appendUrlParameters(basePath, authParam);
 
             // The file dialog will pass back an id to the sharing bundle
             // representing the user's selection. To get the contents
