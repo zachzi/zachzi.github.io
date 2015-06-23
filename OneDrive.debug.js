@@ -368,7 +368,8 @@ OneDriveApp.prototype = {
             mode: FILEDIALOG_PARAM_MODE_READWRITE,
             resourceType: FILEDIALOG_PARAM_RESOURCETYPE_FOLDER,
             select: FILEDIALOG_PARAM_SELECT_SINGLE,
-            interface_method: method
+            interface_method: method,
+            save_scenario: true
         };
 
         // Save operation.
@@ -435,7 +436,7 @@ OneDriveApp.prototype = {
                     case UPLOADTYPE_FORM:
                         var path = 
                             getApiServiceUrl(true /* use vroom api */) +
-                                "drive/items/" + folderId + "/children/" + encodeURIComponent(fileName) + "/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
+                                "drive/items/" + folderId + "/children/{0}/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
                         var formUploadProperties = {
                             path: path,
                             element: file,
@@ -670,6 +671,7 @@ var API_DOWNLOAD = "download",
     API_PARAM_PRETTY = "pretty",
     API_PARAM_RESPOND_ASYNC = "respond-async",
     API_PARAM_RESULT = "result",
+    API_PARAM_SAVESCENARIO = "save_scenario",
     API_PARAM_SDK_VERSION = "SDK-Version",
     API_PARAM_STATUS = "status",
     API_PARAM_STATUS_HTTP = "http_status",
@@ -3275,7 +3277,8 @@ var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
     VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"],
-    VROOM_EXPAND_CHILDREN = "$expand=thumbnails,children($expand=thumbnails)";
+    VROOM_EXPAND_CHILDREN = "$expand=children",
+    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "$expand=thumbnails,children($expand=thumbnails)";
 
 WL.init = function (properties) {
     /// <summary>
@@ -5938,9 +5941,10 @@ var FilePickerOperation = null;
                 ]
             };
 
+            var vroomExpansion = (generateSharingLinks || !op._props[API_PARAM_SAVESCENARIO]) ? VROOM_EXPAND_CHILDRENANDTHUMBNAILS : VROOM_EXPAND_CHILDREN;
             getItemProperties.path = generateSharingLinks ?
-                "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN + "&authkey=" + authKey :
-                "drive/items/" + itemId + "?" + VROOM_EXPAND_CHILDREN + "&access_token=" + wl_app.getAccessTokenForApi();
+                "drives/" + ownerCid + "/items/" + itemId + "?" + vroomExpansion + "&authkey=" + authKey :
+                "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
 
             // The file dialog will pass back an id to the sharing bundle
             // representing the user's selection. To get the contents
@@ -6206,9 +6210,10 @@ UploadOperation.prototype._getStrategy = function (properties) {
         }
 
         // If the caller supplied a file name, use that, otherwise get the file name from the input element.
-        self.setFileName(fileName || fileInput.name);
+        var name = fileName || fileInput.name;
+        self.setFileName(name);
 
-        return new XhrUploadStrategy(self, fileInput, useVroom);
+        return new XhrUploadStrategy(self, fileInput, useVroom, name);
     }
 
     if (useVroom) {
@@ -6534,6 +6539,12 @@ function XhrUploadStrategy(operation, uploadSource, useVroom) {
         reader.onload = function(evt) {
             var data = evt.target.result;
             var xhr = new XMLHttpRequest();
+
+            if (useVroom) {
+                // Replace the placeholder for the file name with the real file name.
+                requestUrl = stringFormat(requestUrl, fileName);
+            }
+
             xhr.open(HTTP_METHOD_PUT, requestUrl, true);
 
             if (useVroom) {
