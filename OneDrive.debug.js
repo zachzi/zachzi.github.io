@@ -434,13 +434,11 @@ OneDriveApp.prototype = {
 
                         break;
                     case UPLOADTYPE_FORM:
-                        var baseUrl = getApiServiceUrl(true /* use vroom api */) + "drive/items/" + folderId + "/children";
-                        var putPath = baseUrl + "/{0}/content?" + VROOM_CONFLICTBEHAVIOR + "&access_token=" + accessToken;
-                        var postPath = baseUrl + "?access_token=" + accessToken;
-
+                        var putPath =
+                            getApiServiceUrl(true /* use vroom api */) +
+                                "drive/items/" + folderId + "/children/{0}/content?" + VROOM_CONFLICTBEHAVIOR + "&access_token=" + accessToken;
                         var formUploadProperties = {
                             path: putPath,
-                            postPath: postPath,
                             element: file,
                             use_vroom_api: true,
                             overwrite: API_PARAM_OVERWRITE_RENAME,
@@ -786,6 +784,7 @@ var ERROR_ACCESS_DENIED = "access_denied",
     ERROR_DESC_ACCESS_DENIED = "METHOD: Failed to get the required user permission to perform this operation.",
     ERROR_DESC_BROWSER_ISSUE = "The request could not be completed due to browser issues.",
     ERROR_DESC_BROWSER_LIMIT = "The request could not be completed due to browser limitations.",
+    ERROR_DESC_BROWSER_UNSUPPORTED = "The request could not be completed since the browser or browser version is not supported.",
     ERROR_DESC_CALLBACK_EXCEPTION = "Callback has thrown an exception. Exception message: MESSAGE",
     ERROR_DESC_CANCEL = "METHOD: The operation has been canceled.",
     ERROR_DESC_COOKIE_INVALID = "The 'wl_auth' cookie is not valid.",
@@ -2015,7 +2014,7 @@ UploadOperation.prototype = {
     },
 
     _upload: function () {
-        this._strategy.upload(this._uploadPath, this._props.postPath);
+        this._strategy.upload(this._uploadPath);
     },
 
     _complete: function () {
@@ -3279,8 +3278,8 @@ var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
     VROOM_CONFLICTBEHAVIOR = "@name.conflictBehavior=rename",
-    VROOM_EXPAND_CHILDREN = "expand=children",
-    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "expand=thumbnails,children(expand=thumbnails)",
+    VROOM_EXPAND_CHILDREN = "expand=children(select=id)",
+    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "expand=thumbnails,children(select={0},name,size;expand=thumbnails)",
     VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
 
 WL.init = function (properties) {
@@ -5944,10 +5943,16 @@ var FilePickerOperation = null;
                 ]
             };
 
-            var vroomExpansion = (generateSharingLinks || !op._props[API_PARAM_SAVESCENARIO]) ? VROOM_EXPAND_CHILDRENANDTHUMBNAILS : VROOM_EXPAND_CHILDREN;
-            getItemProperties.path = generateSharingLinks ?
-                "drives/" + ownerCid + "/items/" + itemId + "?" + vroomExpansion + "&authkey=" + authKey :
-                "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
+            if (generateSharingLinks) {
+                getItemProperties.path =
+                    "drives/" + ownerCid + "/items/" + itemId + "?" + stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "webUrl") + "&authkey=" + authKey;
+            } else {
+                var vroomExpansion = op._props[API_PARAM_SAVESCENARIO] ?
+                    VROOM_EXPAND_CHILDREN :
+                    stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "@content.downloadUrl");
+
+                getItemProperties.path = "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
+            }
 
             // The file dialog will pass back an id to the sharing bundle
             // representing the user's selection. To get the contents
@@ -6195,7 +6200,7 @@ UploadOperation.prototype._getStrategy = function (properties) {
 
     // if the input element has a files property and there is FileReader type available, then the browser supports 
     // the file API and we will use that.
-    /*if (element.files && window.FileReader) {
+    if (element.files && window.FileReader) {
         if (element.files.length !== 1) {
             throw createInvalidParamValue(
                     API_PARAM_ELEMENT, 
@@ -6217,13 +6222,13 @@ UploadOperation.prototype._getStrategy = function (properties) {
         self.setFileName(name);
 
         return new XhrUploadStrategy(self, fileInput, useVroom, name);
-    }*/
+    }
 
-    //if (useVroom) {
+    if (useVroom) {
         // If we're using the new external consent picker and trying to call Vroom instead of LiveConnect,
         // we can't fallback to the multi part form upload.
-      //  throw new Error(ERROR_DESC_BROWSER_ISSUE);
-    //}
+        throw new Error(ERROR_DESC_BROWSER_UNSUPPORTED);
+    }
 
     // if they did not specify a name on the input element, change it to
     // the proper name of "file".
@@ -6257,14 +6262,13 @@ UploadOperation.prototype._getStrategy = function (properties) {
 /**
  * Logic for performing a Multipart form upload.
  */
-function MultiPartFormUploadStrategy(operation, element, interfaceMethod, useVroom) {
+function MultiPartFormUploadStrategy(operation, element, interfaceMethod) {
     var self = this;
     self._op = operation;
     self._iMethod = interfaceMethod;
     self._element = element;
     self._uploadIFrame = null;
     self._uploadTimeoutId = null;
-    self._useVroom = useVroom;
 
     // for a multipartform upload, we can NOT change the file name. The file name
     // will be sent in the body of the request, and there is no way to change it in the
@@ -6330,8 +6334,8 @@ MultiPartFormUploadStrategy.prototype = {
     /**
      * Public call to perform the upload.
      */
-    upload: function (uploadPath, postUploadPath) {
-        this._multiPartFormUpload(this._useVroom ? postUploadPath : uploadPath);
+    upload: function (uploadPath) {
+        this._multiPartFormUpload(uploadPath);
     },
 
     /**
