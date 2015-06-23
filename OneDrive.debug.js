@@ -434,11 +434,13 @@ OneDriveApp.prototype = {
 
                         break;
                     case UPLOADTYPE_FORM:
-                        var path = 
-                            getApiServiceUrl(true /* use vroom api */) +
-                                "drive/items/" + folderId + "/children/{0}/content?%40name.conflictBehavior=rename&access_token=" + accessToken;
+                        var baseUrl = getApiServiceUrl(true /* use vroom api */) + "drive/items/" + folderId + "/children";
+                        var putPath = baseUrl + "/{0}/content?" + VROOM_CONFLICTBEHAVIOR + "&access_token=" + accessToken;
+                        var postPath = baseUrl + "?access_token=" + accessToken;
+
                         var formUploadProperties = {
-                            path: path,
+                            path: putPath,
+                            postPath: postPath,
                             element: file,
                             use_vroom_api: true,
                             overwrite: API_PARAM_OVERWRITE_RENAME,
@@ -2013,7 +2015,7 @@ UploadOperation.prototype = {
     },
 
     _upload: function () {
-        this._strategy.upload(this._uploadPath);
+        this._strategy.upload(this._uploadPath, this._props.postPath);
     },
 
     _complete: function () {
@@ -3276,9 +3278,10 @@ var FORM_UPLOAD_SIZE_LIMIT = 104857600 /* 100 MB in bytes */,
     POLLING_COUNTER = 5,
     ONEDRIVE_PREFIX = "[OneDrive]",
     UI_SKYDRIVEPICKER = "skydrivepicker",
-    VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"],
+    VROOM_CONFLICTBEHAVIOR = "@name.conflictBehavior=rename",
     VROOM_EXPAND_CHILDREN = "$expand=children",
-    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "$expand=thumbnails,children($expand=thumbnails)";
+    VROOM_EXPAND_CHILDRENANDTHUMBNAILS = "$expand=thumbnails,children($expand=thumbnails)",
+    VROOM_THUMBNAIL_SIZES = ["large", "medium", "small"];
 
 WL.init = function (properties) {
     /// <summary>
@@ -6192,7 +6195,7 @@ UploadOperation.prototype._getStrategy = function (properties) {
 
     // if the input element has a files property and there is FileReader type available, then the browser supports 
     // the file API and we will use that.
-    if (element.files && window.FileReader) {
+    /*if (element.files && window.FileReader) {
         if (element.files.length !== 1) {
             throw createInvalidParamValue(
                     API_PARAM_ELEMENT, 
@@ -6214,13 +6217,13 @@ UploadOperation.prototype._getStrategy = function (properties) {
         self.setFileName(name);
 
         return new XhrUploadStrategy(self, fileInput, useVroom, name);
-    }
+    }*/
 
-    if (useVroom) {
+    //if (useVroom) {
         // If we're using the new external consent picker and trying to call Vroom instead of LiveConnect,
         // we can't fallback to the multi part form upload.
-        throw new Error(ERROR_DESC_BROWSER_ISSUE);
-    }
+      //  throw new Error(ERROR_DESC_BROWSER_ISSUE);
+    //}
 
     // if they did not specify a name on the input element, change it to
     // the proper name of "file".
@@ -6248,19 +6251,20 @@ UploadOperation.prototype._getStrategy = function (properties) {
         throw createInvalidParamValue(API_PARAM_ELEMENT, interfaceMethod, errorMessage);
     }
 
-    return new MultiPartFormUploadStrategy(self, element, interfaceMethod);
+    return new MultiPartFormUploadStrategy(self, element, interfaceMethod, useVroom);
 };
 
 /**
  * Logic for performing a Multipart form upload.
  */
-function MultiPartFormUploadStrategy(operation, element, interfaceMethod) {
+function MultiPartFormUploadStrategy(operation, element, interfaceMethod, useVroom) {
     var self = this;
     self._op = operation;
     self._iMethod = interfaceMethod;
     self._element = element;
     self._uploadIFrame = null;
     self._uploadTimeoutId = null;
+    self._useVroom = useVroom;
 
     // for a multipartform upload, we can NOT change the file name. The file name
     // will be sent in the body of the request, and there is no way to change it in the
@@ -6326,8 +6330,8 @@ MultiPartFormUploadStrategy.prototype = {
     /**
      * Public call to perform the upload.
      */
-    upload: function(uploadPath) {
-        this._multiPartFormUpload(uploadPath);
+    upload: function (uploadPath, postUploadPath) {
+        this._multiPartFormUpload(this._useVroom ? postUploadPath : uploadPath);
     },
 
     /**
