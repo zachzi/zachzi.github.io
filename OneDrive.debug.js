@@ -5946,13 +5946,13 @@ var FilePickerOperation = null;
             if (generateSharingLinks) {
                 //getItemProperties.path =
                 //"drives/" + ownerCid + "/items/" + itemId + "?" + stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "webUrl") + "&authkey=" + authKey;
-                var blah = "select=webUrl,name,size&expand=thumbnails,children(select=webUrl,name,size;expand=thumbnails)";
+                var blah = "select=id,webUrl,name,size&expand=thumbnails,children(select=id,webUrl,name,size;expand=thumbnails)";
                 getItemProperties.path = "drives/" + ownerCid + "/items/" + itemId + "?" + blah + "&authkey=" + authKey;
             } else {
                 //var vroomExpansion = op._props[API_PARAM_SAVESCENARIO] ?
                   //  VROOM_EXPAND_CHILDREN :
                     //stringFormat(VROOM_EXPAND_CHILDRENANDTHUMBNAILS, "@content.downloadUrl");
-                var blah = op._props[API_PARAM_SAVESCENARIO] ? "select=id" : "select=@content.downloadUrl,name,size&expand=thumbnails";
+                var blah = op._props[API_PARAM_SAVESCENARIO] ? "select=id" : "select=id,@content.downloadUrl,name,size&expand=thumbnails";
                 //getItemProperties.path = "drive/items/" + itemId + "?" + vroomExpansion + "&access_token=" + wl_app.getAccessTokenForApi();
                 getItemProperties.path = "drive/items/" + itemId + "/children?" + blah + "&access_token=" + wl_app.getAccessTokenForApi();
             }
