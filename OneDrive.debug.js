@@ -378,7 +378,7 @@ OneDriveApp.prototype = {
             function (fileDialogResponse) {
                 var pickerResponse = fileDialogResponse.pickerResponse;
                 var apiResponse = fileDialogResponse.apiResponse;               
-                var isIe9 = true;//internalApp._browser.ie9;
+                var isIe9 = internalApp._browser.ie9;
 
                 var folderId;
                 if (isIe9) {
@@ -5958,7 +5958,7 @@ var FilePickerOperation = null;
                 return;
             }
 
-            var isIe9 = true;//wl_app._browser.ie9,
+            var isIe9 = wl_app._browser.ie9,
                 isSaveScenario = op._props[API_PARAM_SAVESCENARIO],
                 getItemProperties = {
                     method: HTTP_METHOD_GET,
