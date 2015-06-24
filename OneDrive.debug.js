@@ -377,11 +377,20 @@ OneDriveApp.prototype = {
             // Success callback.
             function (fileDialogResponse) {
                 var pickerResponse = fileDialogResponse.pickerResponse;
-                var apiResponse = fileDialogResponse.apiResponse;
+                var apiResponse = fileDialogResponse.apiResponse;               
+                var isIe9 = internalApp._browser.ie9;
 
-                var folderId = apiResponse.value && apiResponse.value[0] && apiResponse.value[0].id;
-                if (!folderId || apiResponse.value.length !== 1) {
-                    throw new Error(stringFormat(ERROR_DESC_INVALID_FILEPICKER_RESPONSE, method, JSON.stringify(fileDialogResponse)));
+                var folderId;
+                if (isIe9) {
+                    // If the browser is IE9, we have to fallback to using LiveConnect for file upload.
+                    folderId = apiResponse.data && apiResponse.data[0].id;
+                }
+                else {
+                    folderId = apiResponse.value && apiResponse.value[0] && apiResponse.value[0].id;
+                    if (!folderId || apiResponse.value.length !== 1)
+                    {
+                        throw new Error(stringFormat(ERROR_DESC_INVALID_FILEPICKER_RESPONSE, method, JSON.stringify(fileDialogResponse)));
+                    }
                 }
 
                 var accessToken = internalApp.getAccessTokenForApi();
@@ -389,6 +398,15 @@ OneDriveApp.prototype = {
                 switch (uploadType) {
                     case UPLOADTYPE_DATA_URL:
                     case UPLOADTYPE_URL:
+                        if (isIe9) {
+                            // Folder ID comes in the format from LiveConnect: folder.{cid}.{cid}!{itemId} 
+                            // -> for vroom we only want {cid}!{itemId}. If the folder is the root, then the
+                            // id will be folder.{cid} which is also invalid for vroom. In that case, we just
+                            // want to use the string "root" for the folder ID.
+                            var folderIdSplit = folderId.split(".");
+                            folderId = folderIdSplit.length > 2 ? folderIdSplit[2] : "root";
+                        }
+
                         var urlUploadProperties = {
                             path: "drives/" + pickerResponse.owner_cid + "/items/" + folderId + "/children",
                             method: HTTP_METHOD_POST, 
@@ -434,13 +452,19 @@ OneDriveApp.prototype = {
 
                         break;
                     case UPLOADTYPE_FORM:
-                        var path =
-                            getApiServiceUrl(true /* use vroom api */) + "drive/items/" + folderId + "/children/{0}/content?" + VROOM_CONFLICTBEHAVIOR;
-                        var pathWithAccessToken = appendUrlParameters(path, { access_token: accessToken });
+                        var path;
+                        if (isIe9) {
+                            path = folderId;
+                        }
+                        else {
+                            var basePath = getApiServiceUrl(true /* use vroom api */) + "drive/items/" + folderId + "/children/{0}/content?" + VROOM_CONFLICTBEHAVIOR;
+                            path = appendUrlParameters(basePath, { access_token: accessToken });
+                        }
+
                         var formUploadProperties = {
-                            path: pathWithAccessToken,
+                            path: path,
                             element: file,
-                            use_vroom_api: true,
+                            use_vroom_api: !isIe9,
                             overwrite: API_PARAM_OVERWRITE_RENAME,
                             file_name: fileName,
                             interface_method: method
@@ -5934,28 +5958,37 @@ var FilePickerOperation = null;
                 return;
             }
 
-            var getItemProperties = {
-                method: HTTP_METHOD_GET,
-                use_vroom_api: true,
-                interface_method: op._props[API_INTERFACE_METHOD],
-                request_headers: [
+            var isIe9 = wl_app._browser.ie9,
+                isSaveScenario = op._props[API_PARAM_SAVESCENARIO],
+                getItemProperties = {
+                    method: HTTP_METHOD_GET,
+                    interface_method: op._props[API_INTERFACE_METHOD]
+                };
+            if (isIe9 && isSaveScenario) {
+                // If the browser is IE9, we have to fallback to using LiveConnect for file upload.
+                getItemProperties[API_PARAM_PATH] = resourceId + "/files";
+            }
+            else {
+                getItemProperties[API_PARAM_VROOMAPI] = true;
+                getItemProperties[API_PARAM_HEADERS_REQUEST] = [
                     { name: API_PARAM_APPLICATION, value: wl_app._appId },
                     { name: API_PARAM_X_REQUESTSTATS, value: stringFormat("{0}={1}", API_PARAM_SDK_VERSION, wl_app._settings.sdk_version) }
-                ]
-            };
+                ];
 
-            var basePath, authParam;
-            if (generateSharingLinks) {
-                basePath = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDRENANDTHUMBNAILS;
-                authParam = { authKey: authKey };
-            } else {
-                basePath = "drive/items/" + itemId + "/children?" +
-                    (op._props[API_PARAM_SAVESCENARIO] ? VROOM_SELECT_ID : VROOM_EXPAND_THUMBNAILS);
-                authParam = { access_token: wl_app.getAccessTokenForApi() };
+                var basePath, authParam;
+                if (generateSharingLinks) {
+                    basePath = "drives/" + ownerCid + "/items/" + itemId + "?" + VROOM_EXPAND_CHILDRENANDTHUMBNAILS;
+                    authParam = { authKey: authKey };
+                }
+                else {
+                    basePath = "drive/items/" + itemId + "/children?" +
+                        (op._props[API_PARAM_SAVESCENARIO] ? VROOM_SELECT_ID : VROOM_EXPAND_THUMBNAILS);
+                    authParam = { access_token: wl_app.getAccessTokenForApi() };
+                }
+
+                getItemProperties[API_PARAM_PATH] = appendUrlParameters(basePath, authParam);
             }
-
-            getItemProperties.path = appendUrlParameters(basePath, authParam);
-
+            
             // The file dialog will pass back an id to the sharing bundle
             // representing the user's selection. To get the contents
             // of this bundle, we now have to do a GET request against the
