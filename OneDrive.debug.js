@@ -1,5 +1,5 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
-// WL.JS Version 5.5.9022.2003
+// WL.JS Version 5.5.9124.2002
 
 (function() {
     if (!window.WL && !window.OneDrive) {
@@ -382,6 +382,7 @@ OneDriveApp.prototype = {
 
                 var folderId;
                 if (isIe9) {
+                    // TODO remove once Vroom supports mutli part form uploads.
                     // If the browser is IE9, we have to fallback to using LiveConnect for file upload.
                     folderId = apiResponse.data && apiResponse.data[0].id;
                 }
@@ -3949,7 +3950,6 @@ wl_app.canLogout = function () {
  * The Web version of logoutWindowsLive() method.
  */
 function logoutWindowsLive(callback) {
-
     cleanLogoutFrame();
 
     var logoutFrame = createHiddenElement("iframe"),
@@ -3959,11 +3959,15 @@ function logoutWindowsLive(callback) {
     document.body.appendChild(logoutFrame);
     wl_app.logoutFrame = logoutFrame;
 
-    // Clean logout iframe in 30s.
-    window.setTimeout(function () {
+    // Clean logout iframe and invoke callback once clear.
+    var start = new Date().getTime();
+    var logoutWatcher = window.setInterval(function() {
         cleanLogoutFrame();
-        callback();
-    }, 30000);
+        if (wl_app.logoutFrame === null || (new Date()).getTime() - start > 30000) {
+            window.clearInterval(logoutWatcher);
+            callback();
+        }
+    }, 1000 /* interval */);
 }
 
 function cleanLogoutFrame() {
@@ -5981,8 +5985,7 @@ var FilePickerOperation = null;
                     authParam = { authKey: authKey };
                 }
                 else {
-                    basePath = "drive/items/" + itemId + "/children?" +
-                        (op._props[API_PARAM_SAVESCENARIO] ? VROOM_SELECT_ID : VROOM_EXPAND_THUMBNAILS);
+                    basePath = "drive/items/" + itemId + "/children?" + (isSaveScenario ? VROOM_SELECT_ID : VROOM_EXPAND_THUMBNAILS);
                     authParam = { access_token: wl_app.getAccessTokenForApi() };
                 }
 
@@ -6369,7 +6372,7 @@ MultiPartFormUploadStrategy.prototype = {
     /**
      * Public call to perform the upload.
      */
-    upload: function (uploadPath) {
+    upload: function(uploadPath) {
         this._multiPartFormUpload(uploadPath);
     },
 
@@ -7115,7 +7118,7 @@ WLText = {
  */
 wl_app._locale = "en";
 
-        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.9022.2003");
+        wl_app[API_X_HTTP_LIVE_LIBRARY] = "Web/DEVICE_" + trimVersionBuildNumber("5.5.9124.2002");
 
         wl_app.testInit = function(properties) {
 
