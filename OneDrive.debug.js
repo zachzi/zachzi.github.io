@@ -3956,7 +3956,7 @@ function logoutWindowsLive(callback) {
         authServer = getAuthServerName(),
         path = "/oauth20_logout.srf?ts=";
     logoutFrame.src = "//" + authServer + path + new Date().getTime();
-    logoutFrame.onunload = function()
+    logoutFrame.onbeforeunload = function()
     {
         cleanLogoutFrame();
         callback();
