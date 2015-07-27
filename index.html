@@ -195,7 +195,7 @@
                 }
                 
                 function getClientIdFromDOM() {
-                    var element = getElementById("onedrive-js");
+                    var element = document.getElementById("onedrive-js");
                     if (element) {    
                         var id = element.getAttribute("client-id");
                         !id && log(stringFormat("Could not find attribute '{0}' on element with id '{1}'.", "client-id", "onedrive-js"), "[OneDrive]");
