@@ -3956,24 +3956,18 @@ function logoutWindowsLive(callback) {
         authServer = getAuthServerName(),
         path = "/oauth20_logout.srf?ts=";
     logoutFrame.src = "//" + authServer + path + new Date().getTime();
-    logoutFrame.onbeforeunload = function()
-    {
-        cleanLogoutFrame();
-        callback();
-    };
-
     document.body.appendChild(logoutFrame);
     wl_app.logoutFrame = logoutFrame;
 
     // Clean logout iframe and invoke callback once clear. Wait at most 30s.
-    //var start = new Date().getTime();
-    //var logoutWatcher = window.setInterval(function() {
-        //cleanLogoutFrame();
-        //if (wl_app.logoutFrame === null || (new Date()).getTime() - start > 30000) {
-          //  window.clearInterval(logoutWatcher);
-        //    callback();
-      //  }
-    //}, 1000 /* interval */);
+    var start = new Date().getTime();
+    var logoutWatcher = window.setInterval(function() {
+        if (wl_app.logoutFrame === null || (new Date()).getTime() - start > 30000) {
+            window.clearInterval(logoutWatcher);
+            cleanLogoutFrame();
+            callback();
+        }
+    }, 1000 /* interval */);
 }
 
 function cleanLogoutFrame() {
