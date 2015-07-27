@@ -103,6 +103,7 @@
     <div class="padding-input">
         <div id="open" class="button button-blue">Open</div>
         <div id="save" class="button button-blue">Save</div>
+        <div id="log-out" class="button button-blue">Log Out</div>
     </div>
     <div id="JsOutputDiv"></div>
     <script>
@@ -164,6 +165,11 @@
                 };
 
                 OneDrive.save(options);
+            });
+            
+            $("#log-out").click(function()
+            {
+                WL.logout(function(){log("Logged out.");});
             });
 
             function log(message) {
