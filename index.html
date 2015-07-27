@@ -103,6 +103,7 @@
     <div class="padding-input">
         <div id="open" class="button button-blue">Open</div>
         <div id="save" class="button button-blue">Save</div>
+        <div id="log-in" class="button button-blue">Log In</div>
         <div id="log-out" class="button button-blue">Log Out</div>
     </div>
     <div id="JsOutputDiv"></div>
@@ -166,6 +167,47 @@
 
                 OneDrive.save(options);
             });
+            
+            $("#log-in").click(function(){
+                WL.init({ client_id: getClientIdFromDOM() });
+                WL.Event.subscribe("auth.login", onLogin);
+                WL.Event.subscribe("auth.sessionChange", onSessionChange);
+                
+                var session = WL.getSession();
+                if (session) {
+                    log("You are already signed in!");
+                } else {
+                    WL.login({ scope: "wl.signin" });
+                }
+                
+                function onLogin() {
+                    var session = WL.getSession();
+                    if (session) {
+                        log("You are signed in!");
+                    }
+                }
+                 
+                function onSessionChange() {
+                    var session = WL.getSession();
+                    if (session) {
+                        log("Your session has changed.");
+                    }
+                }
+                
+                function getClientIdFromDOM() {
+                    var element = getElementById("onedrive-js");
+                    if (element) {    
+                        var id = element.getAttribute("client-id");
+                        !id && log(stringFormat("Could not find attribute '{0}' on element with id '{1}'.", "client-id", "onedrive-js"), "[OneDrive]");
+                
+                        return id;
+                    }
+                    else {
+                        log(stringFormat("Could not find element with id '{0}'.", "onedrive-js"), "[OneDrive]");
+                        return null;
+                    }
+                }
+            })
             
             $("#log-out").click(function(){
                 WL.logout(function(){log("Logged out.");});
