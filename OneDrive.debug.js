@@ -3956,23 +3956,22 @@ function logoutWindowsLive(callback) {
         authServer = getAuthServerName(),
         path = "/oauth20_logout.srf?ts=";
     logoutFrame.src = "//" + authServer + path + new Date().getTime();
+
+    var onComplete = function () {
+        cleanLogoutFrame(callback);
+    };
+
     if (logoutFrame.attachEvent) {
-        logoutFrame.attachEvent("onload", function () {
-            cleanLogoutFrame(callback);
-        });
+        logoutFrame.attachEvent("onload", onComplete);
     } else {
-        logoutFrame.onload = function () {
-            cleanLogoutFrame(callback);
-        };
+        logoutFrame.onload = onComplete;
     }
 
     document.body.appendChild(logoutFrame);
     wl_app.logoutFrame = logoutFrame;
 
     // Clean logout iframe in 30s if onload was never triggered.
-    window.setTimeout(function () {
-        cleanLogoutFrame(callback);
-    }, 30000);
+    window.setTimeout(onComplete, 30000);
 }
 
 function cleanLogoutFrame(callback) {
