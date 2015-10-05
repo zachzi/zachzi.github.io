@@ -497,14 +497,14 @@ var AccountChooserHelper = function () {
         AccountChooserHelper._buildAccountChooserUrl = function (access, selectionMode, viewType, linkType) {
             var queryParameters = {};
             var aadClientId = OneDriveState.clientIds.aadClientId;
-            if (!aadClientId) {
+            if (aadClientId) {
                 queryParameters['aad_client_id'] = aadClientId;
             }
             var msaClientId = OneDriveState.clientIds.msaClientId;
-            if (!msaClientId) {
+            if (msaClientId) {
                 queryParameters['msa_client_id'] = msaClientId;
             }
-            if (!linkType) {
+            if (linkType) {
                 queryParameters['link_type'] = linkType;
             }
             queryParameters['ru'] = 'http://zachzi.github.io/';
