@@ -869,6 +869,9 @@ var RedirectHelper = function () {
             if (serializedState['state']) {
                 queryParameters['state'] = serializedState['state'];
             }
+            if (queryParameters['access_token'] && queryParameters['scope']) {
+                queryParameters['state'] = 'msa_picker';
+            }
             var state = queryParameters['state'];
             if (!state) {
                 return;
