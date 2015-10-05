@@ -1,20 +1,31 @@
+<!-- Use Fiddler or edit the hosts file to map the app's registered redirect URL to the local Node server URL. -->
 <html>
     <head>
-        <title>Test page for LiveConnectSDK.</title>
-        <script id="onedrive-js" type="text/javascript" src="/OneDrive.debug.js" client-id="0000000040125824"></script>
-        <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-1.9.0.js"></script>
+        <title>Test page for Unified JavaScript Invoker.</title>
+        <script>
+            var __extends = (this && this.__extends) || function (d, b) {
+                    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+                    function __() { this.constructor = d; }
+                    __.prototype = b.prototype;
+                    d.prototype = new __();
+                };
+
+            window.__extends = __extends;
+        </script>
+        <script type="text/javascript" id="onedrive-js"  src="OneDriveSdk.js" client-id="0000000040125824,c599d424-4332-4ccc-8ad0-98121b8f0a18"></script>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
         <style type="text/css">
             header {
                 color: #094AB1;
             }
-            
+
             body {
-                font-family: "Segoe UI", "Segoe UI Web Regular", "Segoe UI Symbol", "Helvetica Neue", Arial;
+                font-family: "Segoe UI", "Segoe UI Web Regular", "Segoe UI Symbol", "Helvetica Neue", "Arial";
             }
-            
+
             .button {
                 color: white;
-                display: inline-block; 
+                display: inline-block;
                 width: 100px;
                 text-align: center;
                 padding: 2px 5px;
@@ -25,19 +36,19 @@
             .button-blue {
                 background-color: #094AB1;
             }
-            
+
             .button-blue:hover {
                 background-color: #255fb9 !important;
             }
-            
+
             .padding {
                 padding: 10px 10px;
             }
-            
+
             .padding-input {
                 padding-top: 10px;
             }
-            
+
             .options {
                 display: inline-block;
                 vertical-align: top;
@@ -46,181 +57,150 @@
                 border-color: #094AB1;
                 border-radius: 10px;
             }
-            
+
             .options-container {
                 display: inline-block;
             }
-            
+
             .options-title {
                 display: inline-block;
                 font-size: 125%;
                 padding-bottom: 10px;
             }
-            
+
             #JsOutputDiv {
                 display: block;
                 padding: 2px 5px;
                 margin: 0px 10px;
             }
-        </style> 
+        </style>
     </head>
-    <header>
-        <h1>Awesome Test App!</h1>
-    </header>
-    <table class="options-container">
-        <tr>
-            <td class="padding options"><b class="options-title">Open Options</b>
-                <div>
-                    <input id="multiSelect" type="checkbox">Multi select (default: single select)
-                </div>
-                <div>
-                    <input id="downloadLink" type="checkbox">Get download links (default: webview links)
-                </div>
-            </td>
-            <td class="padding options"><b class="options-title">Save Options</b>
-                <div>
-                    <input id="content-url-upload" type="radio" name="saving-input" checked="checked"/>Upload from content URL
-                    <input id="data-url-upload" type="radio" name="saving-input"/>Upload from data URL
-                    <input id="form-upload" type="radio" name="saving-input"/>Form upload
-                </div>
-                <div class="padding-input">
-                    <form>
-                        <input id="file" name="file" type="file" />
-                    </form>
-                </div>
-                <div class="padding-input">
-                    <input id="content-url-text" type="text" value="https://storage.live.com/robots.txt"/> Content URL
-                </div>
-                <div class="padding-input">
-                    <input id="data-url-text" type="text" value="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="/> Data URL
-                </div>
-                <div class="padding-input">
-                    <input id="file-name" type="text" value="foo.bar"/> File name
-                </div>
-            </td>
-        </tr>
-    </table>
-    <div class="padding-input">
-        <div id="open" class="button button-blue">Open</div>
-        <div id="save" class="button button-blue">Save</div>
-        <div id="log-in" class="button button-blue">Log In</div>
-        <div id="log-out" class="button button-blue">Log Out</div>
-    </div>
-    <div id="JsOutputDiv"></div>
-    <script>
-        window.onload = function(){
-            $("#open").click(function(){
-                var multiSelectChecked = $("#multiSelect")[0].checked;
-                var downloadChecked = $("#downloadLink")[0].checked;
-                
-                var options = {
-                    linkType: downloadChecked ? "downloadLink" : "webViewLink",
-                    multiSelect: multiSelectChecked,
-                    success: function(files) {
-                        log("OneDrive.open - success");
-                        log(JSON.stringify(files, null, 4));
-                    },
-                    cancel: function() {
-                        log("OneDrive.open - user cancel");
-                    }
-                };
+    <body>
+        <header>
+            <h1>Awesome Test App!</h1>
+        </header>
+        <table class="options-container">
+            <tr>
+                <td class="padding options"><b class="options-title">Open Options</b>
+                    <div>
+                        <input id="multiSelect" type="checkbox">Multi select (default: single select)
+                    </div>
+                    <div>
+                        <input id="downloadLink" type="checkbox">Get download links (default: web links)
+                    </div>
+                </td>
+                <td class="padding options"><b class="options-title">Save Options</b>
+                    <div>
+                        <input id="content-url-upload" type="radio" name="saving-input" checked="checked"/>Upload from content URL
+                        <input id="data-url-upload" type="radio" name="saving-input"/>Upload from data URL
+                        <input id="form-upload" type="radio" name="saving-input"/>Form upload
+                    </div>
+                    <div class="padding-input">
+                        <form>
+                            <input id="file" name="file" type="file" />
+                        </form>
+                    </div>
+                    <div class="padding-input">
+                        <input id="content-url-text" type="text" value="https://storage.live.com/robots.txt"/> Content URL
+                    </div>
+                    <div class="padding-input">
+                        <input id="data-url-text" type="text" value="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="/> Data URL
+                    </div>
+                    <div class="padding-input">
+                        <input id="file-name" type="text" value="foo.bar"/> File name
+                    </div>
+                </td>
+                <td class="padding options"><b class="options-title">Picker Options</b>
+                    <div>
+                        <input id="openInNewWindow" type="checkbox" checked="checked">Open picker in popup
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <div class="padding-input">
+            <div id="open" class="button button-blue">Open</div>
+            <div id="save" class="button button-blue">Save</div>
+        </div>
+        <div id="JsOutputDiv"></div>
+        <script>
+            window.onload = function(){
+                    $("#open").click(function(){
+                    var openInNewWindowChecked = $("#openInNewWindow")[0].checked;
 
-                OneDrive.open(options);
-            });
+                    var multiSelectChecked = $("#multiSelect")[0].checked;
+                    var downloadChecked = $("#downloadLink")[0].checked;
 
-            $("#save").click(function(){
-                var file;
-                var contentUrlInput = $("#content-url-upload")[0];
-                var dataUrlInput = $("#data-url-upload")[0];
-                var nameInput = $("#file-name")[0];
-                
-                if(contentUrlInput.checked) {
-                    file = $("#content-url-text")[0].value;
-                }
-                else if(dataUrlInput.checked) {
-                    file = $("#data-url-text")[0].value;
-                }
-                else if($("#form-upload")[0].checked) {
-                    file = "file";
-                }
-                else {
-                    alert("Provide a file to save and try again!");
-                    return;
-                }
+                    var options = {
+                        linkType: downloadChecked ? "downloadLink" : "webLink",
+                        multiSelect: multiSelectChecked,
+                        openInNewWindow: openInNewWindowChecked,
+                        success: function(files) {
+                            log("OneDrive.open - success");
+                            log(JSON.stringify(files, null, 4));
+                        },
+                        cancel: function() {
+                            log("OneDrive.open - user cancel");
+                        },
+                        error: function(errorMessage) {
+                            log("OneDrive.open - error " + errorMessage);
+                        }
+                    };
 
-                var options = {
-                    file: file,
-                    fileName: nameInput.value,
-                    success: function() {
-                        log("OneDrive.save - upload succeeded!");
-                    },
-                    cancel: function() {
-                        log("OneDrive.save - user cancel");
-                    },
-                    progress: function(percent) {
-                        log("OneDrive.save - progress " + percent + "%");
-                    },
-                    error: function(errorMessage) {
-                        log("OneDrive.save - error " + errorMessage);
-                    }
-                };
+                    OneDrive.open(options);
+                });
 
-                OneDrive.save(options);
-            });
-            
-            $("#log-in").click(function(){
-                WL.init({ client_id: getClientIdFromDOM() });
-                WL.Event.subscribe("auth.login", onLogin);
-                WL.Event.subscribe("auth.sessionChange", onSessionChange);
-                
-                var session = WL.getSession();
-                if (session) {
-                    log("You are already signed in!");
-                } else {
-                    WL.login({ scope: "wl.signin" });
-                }
-                
-                function onLogin() {
-                    var session = WL.getSession();
-                    if (session) {
-                        log("You are signed in!");
+                $("#save").click(function(){
+                    var openInNewWindowChecked = $("#openInNewWindow")[0].checked;
+
+                    var contentUrlInput = $("#content-url-upload")[0];
+                    var dataUrlInput = $("#data-url-upload")[0];
+                    var nameInput = $("#file-name")[0];
+
+                    var file;
+                    if(contentUrlInput.checked) {
+                        file = $("#content-url-text")[0].value;
                     }
-                }
-                 
-                function onSessionChange() {
-                    var session = WL.getSession();
-                    if (session) {
-                        log("Your session has changed.");
+                    else if(dataUrlInput.checked) {
+                        file = $("#data-url-text")[0].value;
                     }
-                }
-                
-                function getClientIdFromDOM() {
-                    var element = document.getElementById("onedrive-js");
-                    if (element) {    
-                        var id = element.getAttribute("client-id");
-                        !id && log(stringFormat("Could not find attribute '{0}' on element with id '{1}'.", "client-id", "onedrive-js"), "[OneDrive]");
-                
-                        return id;
+                    else if($("#form-upload")[0].checked) {
+                        file = "file";
                     }
                     else {
-                        log(stringFormat("Could not find element with id '{0}'.", "onedrive-js"), "[OneDrive]");
-                        return null;
+                        alert("Provide a file to save and try again!");
+                        return;
                     }
-                }
-            })
-            
-            $("#log-out").click(function(){
-                WL.logout(function(){log("Logged out.");});
-            });
 
-            function log(message) {
-                var child = document.createElement("pre");
-                child.innerText = message;
-                
-                var parent = document.getElementById('JsOutputDiv') || document.body;
-                parent.appendChild(child);
-                parent.appendChild(document.createElement("br"));
-            }
-        };
-    </script>
+                    var options = {
+                        file: file,
+                        fileName: nameInput.value,
+                        openInNewWindow: openInNewWindowChecked,
+                        success: function() {
+                            log("OneDrive.save - upload succeeded!");
+                        },
+                        cancel: function() {
+                            log("OneDrive.save - user cancel");
+                        },
+                        progress: function(percent) {
+                            log("OneDrive.save - progress " + percent + "%");
+                        },
+                        error: function(errorMessage) {
+                            log("OneDrive.save - error " + errorMessage);
+                        }
+                    };
+
+                    OneDrive.save(options);
+                });
+
+                function log(message) {
+                    var child = document.createElement("pre");
+                    child.innerText = message;
+
+                    var parent = document.getElementById('JsOutputDiv') || document.body;
+                    parent.appendChild(child);
+                    parent.appendChild(document.createElement("br"));
+                }
+            };
+        </script>
+    </body>
 </html>
