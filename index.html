@@ -1,3 +1,4 @@
+<!-- Use Fiddler or edit the hosts file to map the app's registered redirect URL to the local Node server URL. -->
 <html>
     <head>
         <title>Test page for Unified JavaScript Invoker.</title>
@@ -129,20 +130,32 @@
                     var multiSelectChecked = $("#multiSelect")[0].checked;
                     var downloadChecked = $("#downloadLink")[0].checked;
 
+                    var success = function(files) {
+                        log("OneDrive.open - success");
+                        log(JSON.stringify(files, null, 4));
+                    };
+
+                    var cancel = function() {
+                        log("OneDrive.open - user cancel");
+                    };
+
+                    var error = function(errorMessage) {
+                        log("OneDrive.open - error " + errorMessage);
+                    };
+
+                    if (!openInNewWindowChecked) {
+                        window["od_success"] = success;
+                        window["od_cancel"] = cancel;
+                        window["od_error"] = error;
+                    }
+
                     var options = {
                         linkType: downloadChecked ? "downloadLink" : "webLink",
                         multiSelect: multiSelectChecked,
                         openInNewWindow: openInNewWindowChecked,
-                        success: function(files) {
-                            log("OneDrive.open - success");
-                            log(JSON.stringify(files, null, 4));
-                        },
-                        cancel: function() {
-                            log("OneDrive.open - user cancel");
-                        },
-                        error: function(errorMessage) {
-                            log("OneDrive.open - error " + errorMessage);
-                        }
+                        success: openInNewWindowChecked ? success : "od_success",
+                        cancel: openInNewWindowChecked ? cancel : "od_cancel",
+                        error: openInNewWindowChecked ? error : "od_error"
                     };
 
                     OneDrive.open(options);
@@ -170,22 +183,37 @@
                         return;
                     }
 
+                    var success = function() {
+                        log("OneDrive.save - upload succeeded!");
+                    };
+
+                    var cancel = function() {
+                        log("OneDrive.save - user cancel");
+                    };
+
+                    var progress = function(percent) {
+                        log("OneDrive.save - progress " + percent + "%");
+                    };
+
+                    var error = function(errorMessage) {
+                        log("OneDrive.save - error " + errorMessage);
+                    };
+
+                    if (!openInNewWindowChecked) {
+                        window["od_success"] = success;
+                        window["od_cancel"] = cancel;
+                        window["od_progress"] = progress;
+                        window["od_error"] = error;
+                    }
+
                     var options = {
                         file: file,
                         fileName: nameInput.value,
                         openInNewWindow: openInNewWindowChecked,
-                        success: function() {
-                            log("OneDrive.save - upload succeeded!");
-                        },
-                        cancel: function() {
-                            log("OneDrive.save - user cancel");
-                        },
-                        progress: function(percent) {
-                            log("OneDrive.save - progress " + percent + "%");
-                        },
-                        error: function(errorMessage) {
-                            log("OneDrive.save - error " + errorMessage);
-                        }
+                        success: openInNewWindowChecked ? success : "od_success",
+                        cancel: openInNewWindowChecked ? cancel : "od_cancel",
+                        progress: openInNewWindowChecked ? progress : "od_progress",
+                        error: openInNewWindowChecked ? error : "od_error"
                     };
 
                     OneDrive.save(options);
