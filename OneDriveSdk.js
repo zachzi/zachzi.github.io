@@ -437,7 +437,7 @@ var SaverOptions = function (_super) {
             if (UrlHelper.isPathFullUrl(file)) {
                 this.uploadType = UploadType.url;
                 this.fileName = fileName || UrlHelper.getFileNameFromUrl(file);
-            } else if (UrlHelper.isPathDataUrl) {
+            } else if (UrlHelper.isPathDataUrl(file)) {
                 this.uploadType = UploadType.dataUrl;
                 this.fileName = fileName;
                 if (!this.fileName) {
@@ -450,7 +450,7 @@ var SaverOptions = function (_super) {
                     if (fileInputElement.type !== 'file') {
                         Logging.log('bad type - file');
                     }
-                    if (fileInputElement.value === '') {
+                    if (!fileInputElement.value) {
                         Logging.log('bad type - value');
                     }
                     if (!fileInputElement.files || !window['FileReader']) {
@@ -507,7 +507,7 @@ var AccountChooserHelper = function () {
             if (linkType) {
                 queryParameters['link_type'] = linkType;
             }
-            queryParameters['ru'] = 'http://zachzi.github.io/';
+            queryParameters['ru'] = window.location.hostname;
             queryParameters['access'] = access;
             queryParameters['selection_mode'] = selectionMode;
             queryParameters['view_type'] = viewType;
@@ -697,15 +697,13 @@ var ObjectHelper = function () {
         function ObjectHelper() {
         }
         ObjectHelper.shallowClone = function (object) {
-            if (!object) {
+            if (typeof object !== 'object' || !object) {
                 return null;
             }
             var clonedObject = {};
-            if (object != null) {
-                for (var key in object) {
-                    if (object.hasOwnProperty(key)) {
-                        clonedObject[key] = object[key];
-                    }
+            for (var key in object) {
+                if (object.hasOwnProperty(key)) {
+                    clonedObject[key] = object[key];
                 }
             }
             return clonedObject;
@@ -886,9 +884,15 @@ var RedirectHelper = function () {
             }
             switch (state) {
             case 'discovery':
+                if (!openInNewWindow) {
+                    RedirectHelper._displayOverlay();
+                }
                 RedirectHelper._handleDiscoverRedirect(queryParameters);
                 break;
             case 'aad_tenant_login':
+                if (!openInNewWindow) {
+                    RedirectHelper._displayOverlay();
+                }
                 RedirectHelper._handleAADTenantLoginRedirect(queryParameters);
                 break;
             case 'msa_picker':
@@ -1310,7 +1314,7 @@ var TypeValidationHelper = function () {
             if (typeof object !== expectedType) {
                 Logging.log('bad object type');
             }
-            if (validValues !== undefined && !TypeValidationHelper._isValidValue(object, validValues)) {
+            if (!TypeValidationHelper._isValidValue(object, validValues)) {
                 Logging.log('invalid value');
             }
             return object;
@@ -1349,8 +1353,8 @@ var TypeValidationHelper = function () {
             return returnFunction;
         };
         TypeValidationHelper._isValidValue = function (object, validValues) {
-            if (!Array.isArray(validValues)) {
-                return false;
+            if (!validValues) {
+                return true;
             }
             for (var i = 0; i < validValues.length; i++) {
                 if (object === validValues[i]) {
@@ -1503,7 +1507,7 @@ var WindowStateHelper = function () {
         function WindowStateHelper() {
         }
         WindowStateHelper.getWindowState = function () {
-            return ObjectHelper.deserializeJSON(window.name);
+            return ObjectHelper.deserializeJSON(window.name || '{}');
         };
         WindowStateHelper.setWindowState = function (values, windowState) {
             if (windowState === void 0) {
