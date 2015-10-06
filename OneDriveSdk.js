@@ -117,7 +117,7 @@ module.exports = OneDriveState;
 var Logging = _dereq_('./utilities/Logging'), ResponseHelper = _dereq_('./utilities/ResponseHelper');
 var POPUP_WIDTH = 800;
 var POPUP_HEIGHT = 650;
-var POPUP_PINGER_INTERVAL = 100;
+var POPUP_PINGER_INTERVAL = 500;
 var Popup = function () {
         function Popup(url, name, successCallback, errorCallabck) {
             this._messageCallbackInvoked = false;
@@ -141,7 +141,7 @@ var Popup = function () {
                         Popup._currentPopup = null;
                         var response = ResponseHelper.parsePickerResponse(event.data);
                         currentPopup._messageCallbackInvoked = true;
-                        if (response.error !== undefined) {
+                        if (response.error === undefined) {
                             currentPopup._successCallback(response);
                         } else {
                             currentPopup._errorCallback(response);
@@ -181,8 +181,7 @@ var Popup = function () {
             var _this = this;
             var interval = window.setInterval(function () {
                     if (_this._isPopupOpen()) {
-                        Logging.log('pinging popup');
-                        _this._popup.postMessage('ping', window.location.origin);
+                        _this._popup.postMessage('ping', '*');
                     } else {
                         window.clearInterval(interval);
                         Popup._currentPopup = null;
@@ -510,7 +509,7 @@ var AccountChooserHelper = function () {
             if (linkType) {
                 queryParameters['link_type'] = linkType;
             }
-            queryParameters['ru'] = window.location.origin;
+            queryParameters['ru'] = UrlHelper.appendToPath(window.location.origin, window.location.pathname);
             queryParameters['access'] = access;
             queryParameters['selection_mode'] = selectionMode;
             queryParameters['view_type'] = viewType;
@@ -729,9 +728,6 @@ var ObjectHelper = function () {
         ObjectHelper.serializeJSON = function (value) {
             return JSON.stringify(value);
         };
-        ObjectHelper.isValidEnum = function (str, enumType) {
-            return typeof enumType[enumType[str]] === 'string';
-        };
         return ObjectHelper;
     }();
 module.exports = ObjectHelper;
@@ -854,7 +850,7 @@ var PickerHelper = function () {
     }();
 module.exports = PickerHelper;
 },{"../Constants":1,"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./FilesV2Helper":15,"./Logging":16,"./ObjectHelper":17,"./RedirectHelper":19,"./VroomHelper":25}],19:[function(_dereq_,module,exports){
-var Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
+var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
 var AAD_LOGIN_URL = 'https://login.microsoftonline.com/common/oauth2/authorize';
 var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
 var RedirectHelper = function () {
@@ -869,9 +865,6 @@ var RedirectHelper = function () {
             var serializedState = WindowStateHelper.getWindowState();
             if (serializedState['state']) {
                 queryParameters['state'] = serializedState['state'];
-            }
-            if (queryParameters['access_token'] && queryParameters['scope']) {
-                queryParameters['state'] = 'msa_picker';
             }
             var state = queryParameters['state'];
             if (!state) {
@@ -974,13 +967,14 @@ var RedirectHelper = function () {
                     window.close();
                 }, 1000);
             window.addEventListener('message', function (event) {
-                debugger;
                 if (!Popup.canReceiveMessage(event)) {
                     return;
                 }
                 window.clearTimeout(pingTimeout);
                 event.source.postMessage(response, window.location.origin);
-                window.close();
+                CallbackHelper.invokeCallbackAsynchronous(function () {
+                    window.close();
+                });
             });
         };
         RedirectHelper._displayOverlay = function () {
@@ -995,13 +989,14 @@ var RedirectHelper = function () {
                 ];
             overlay.style.cssText = style.join(';');
             DomHelper.onDocumentReady(function () {
+                debugger;
                 document.body.appendChild(overlay);
             });
         };
         return RedirectHelper;
     }();
 module.exports = RedirectHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./DomHelper":14,"./Logging":16,"./ObjectHelper":17,"./TypeValidationHelper":23,"./UrlHelper":24,"./WindowStateHelper":26}],20:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./Logging":16,"./ObjectHelper":17,"./TypeValidationHelper":23,"./UrlHelper":24,"./WindowStateHelper":26}],20:[function(_dereq_,module,exports){
 var ApiEndpoint = _dereq_('../models/ApiEndpoint'), Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging');
 var CID_PADDING = '0000000000000000';
 var CID_PADDING_LENGTH = CID_PADDING.length;
@@ -1391,9 +1386,7 @@ var UrlHelper = function () {
             }
             var queryString = '';
             for (var key in queryParameters) {
-                var encodedKey = encodeURIComponent(key);
-                var encodedValue = encodeURIComponent(queryParameters[key]);
-                queryString += (queryString.length ? '&' : '') + StringHelper.format('{0}={1}', encodedKey, encodedValue);
+                queryString += (queryString.length ? '&' : '') + StringHelper.format('{0}={1}', encodeURIComponent(key), encodeURIComponent(queryParameters[key]));
             }
             return baseUrl + queryString;
         };
