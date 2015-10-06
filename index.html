@@ -1,4 +1,4 @@
-<!-- Use Fiddler or edit the hosts file to map the app's registered redirect URL to the local Node server URL. -->
+<!DOCTYPE html>
 <html>
     <head>
         <title>Test page for Unified JavaScript Invoker.</title>
@@ -123,8 +123,8 @@
         </div>
         <div id="JsOutputDiv"></div>
         <script>
-            window.onload = function(){
-                    $("#open").click(function(){
+            window.onload = function() {
+                $("#open").click(function() {
                     var openInNewWindowChecked = $("#openInNewWindow")[0].checked;
 
                     var multiSelectChecked = $("#multiSelect")[0].checked;
@@ -161,7 +161,7 @@
                     OneDrive.open(options);
                 });
 
-                $("#save").click(function(){
+                $("#save").click(function() {
                     var openInNewWindowChecked = $("#openInNewWindow")[0].checked;
 
                     var contentUrlInput = $("#content-url-upload")[0];
