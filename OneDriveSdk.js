@@ -969,12 +969,12 @@ var RedirectHelper = function () {
             RedirectHelper.redirect(UrlHelper.appendToPath(tenantUrl, 'MySiteRedirect.aspx?MySiteRedirect=AllDocuments#p=2'), stateValues);
         };
         RedirectHelper._sendResponse = function (response) {
-            debugger;
             var pingTimeout = window.setTimeout(function () {
                     Logging.log('ping missing');
                     window.close();
                 }, 1000);
             window.addEventListener('message', function (event) {
+                debugger;
                 if (!Popup.canReceiveMessage(event)) {
                     return;
                 }
