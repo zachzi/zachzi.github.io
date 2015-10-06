@@ -487,7 +487,7 @@ var UploadType;
 module.exports = UploadType;
 },{}],12:[function(_dereq_,module,exports){
 var OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper');
-var ACCOUNT_CHOOSER_URL = 'https://onedrive.live.com/picker/accountchooser?prompt=select_account';
+var ACCOUNT_CHOOSER_URL = 'https://onedrive.live.com/picker/accountchooser';
 var AccountChooserHelper = function () {
         function AccountChooserHelper() {
         }
