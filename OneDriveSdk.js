@@ -128,7 +128,7 @@ var Popup = function () {
             Popup._createMessageReceiver();
         }
         Popup.canReceiveMessage = function (event) {
-            return event.origin === window.location.hostname;
+            return event.origin === window.location.origin;
         };
         Popup._createMessageReceiver = function () {
             if (!Popup._createdMessageReceiver) {
