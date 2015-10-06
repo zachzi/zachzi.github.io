@@ -460,6 +460,9 @@ var SaverOptions = function (_super) {
                         Logging.log('files');
                     }
                     var fileInput = fileInputElement.files[0];
+                    if (!fileInput) {
+                        Logging.log('missing file input');
+                    }
                     if (fileInput.size > Constants.FORM_UPLOAD_SIZE_LIMIT) {
                         Logging.log('file size');
                     }
@@ -661,7 +664,7 @@ var FilesV2Helper = function () {
                         error(errorObjects);
                     }
                 } else if (totalResponses % BATCH_SIZE === 0) {
-                    runBatch(totalResponses, Math.min(totalResponses + BATCH_SIZE, numItems));
+                    runBatch(totalResponses, Math.min(numItems, totalResponses + BATCH_SIZE));
                 }
             };
             runBatch(0, Math.min(numItems, BATCH_SIZE));
