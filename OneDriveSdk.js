@@ -182,7 +182,7 @@ var Popup = function () {
             var invterval = window.setInterval(function () {
                     if (_this._isPopupOpen()) {
                         Logging.log('pinging popup');
-                        _this._popup.postMessage('ping', '*');
+                        _this._popup.postMessage('ping', window.location.origin);
                     } else {
                         window.clearInterval(invterval);
                         Popup._currentPopup = null;
@@ -975,7 +975,7 @@ var RedirectHelper = function () {
                     return;
                 }
                 window.clearTimeout(pingTimeout);
-                event.source.postMessage(response);
+                event.source.postMessage(response, window.location.origin);
                 window.close();
             });
         };
