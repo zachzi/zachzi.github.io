@@ -507,7 +507,7 @@ var AccountChooserHelper = function () {
             if (linkType) {
                 queryParameters['link_type'] = linkType;
             }
-            queryParameters['ru'] = window.location.hostname;
+            queryParameters['ru'] = window.location.origin;
             queryParameters['access'] = access;
             queryParameters['selection_mode'] = selectionMode;
             queryParameters['view_type'] = viewType;
