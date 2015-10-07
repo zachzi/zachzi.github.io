@@ -509,7 +509,7 @@ var AccountChooserHelper = function () {
             if (linkType) {
                 queryParameters['link_type'] = linkType;
             }
-            queryParameters['ru'] = UrlHelper.appendToPath(window.location.origin, window.location.pathname);
+            queryParameters['ru'] = UrlHelper.trimUrlQuery(window.location.href);
             queryParameters['access'] = access;
             queryParameters['selection_mode'] = selectionMode;
             queryParameters['view_type'] = viewType;
@@ -871,7 +871,7 @@ var RedirectHelper = function () {
                 return;
             }
             var options = serializedState['options'];
-            if (ObjectHelper.isNullOrUndefinied(options)) {
+            if (!options) {
                 Logging.log('missing options');
             }
             var openInNewWindow = TypeValidationHelper.validateType(options.openInNewWindow, 'boolean');
@@ -965,12 +965,13 @@ var RedirectHelper = function () {
             var pingTimeout = window.setTimeout(function () {
                     Logging.log('ping missing');
                     window.close();
-                }, 1000);
+                }, 2000);
             window.addEventListener('message', function (event) {
                 if (!Popup.canReceiveMessage(event)) {
                     return;
                 }
                 window.clearTimeout(pingTimeout);
+                Logging.log('sending response back: ' + JSON.stringify(response));
                 event.source.postMessage(response, window.location.origin);
                 CallbackHelper.invokeCallbackAsynchronous(function () {
                     window.close();
@@ -989,7 +990,6 @@ var RedirectHelper = function () {
                 ];
             overlay.style.cssText = style.join(';');
             DomHelper.onDocumentReady(function () {
-                debugger;
                 document.body.appendChild(overlay);
             });
         };
