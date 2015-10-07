@@ -927,8 +927,9 @@ var RedirectHelper = function () {
                 var apiEndpoint = responseValues['serviceEndpointUri'];
                 var queryParameters = {
                         client_id: OneDriveState.clientIds.aadClientId,
-                        response_type: 'token',
                         resource: tenantUrl,
+                        response_type: 'token',
+                        redirect_uri: UrlHelper.trimUrlQuery(window.location.href),
                         state: 'aad_tenant_login'
                     };
                 var stateValue = [{
