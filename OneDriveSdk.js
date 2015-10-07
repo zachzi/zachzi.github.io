@@ -452,13 +452,14 @@ var SaverOptions = function (_super) {
                     if (!fileInputElement.value) {
                         Logging.log('bad type - value');
                     }
-                    if (!fileInputElement.files || !window['FileReader']) {
+                    var files = fileInputElement.files;
+                    if (!files || !window['FileReader']) {
                         Logging.log('files API not supported');
                     }
-                    if (fileInputElement.files.length !== 1) {
+                    if (files.length !== 1) {
                         Logging.log('files');
                     }
-                    var fileInput = fileInputElement.files[0];
+                    var fileInput = files[0];
                     if (!fileInput) {
                         Logging.log('missing file input');
                     }
@@ -560,6 +561,8 @@ module.exports = CallbackHelper;
 var Logging = _dereq_('./Logging');
 var DOM_CLIENT_ID = 'client-id';
 var DOM_SDK_ID = 'onedrive-js';
+var MSA_APPID_PATTERN = new RegExp('^([a-fA-F0-9]){16}$');
+var AAD_APPID_PATTERN = new RegExp('^[a-fA-F\\d]{8}-([a-fA-F\\d]{4}-){3}[a-fA-F\\d]{12}$');
 var DomHelper = function () {
         function DomHelper() {
         }
@@ -576,22 +579,16 @@ var DomHelper = function () {
                 if (splitClientIds.length < 1 || splitClientIds.length > 2) {
                     Logging.log('error');
                 }
-                var foundValidClientId = false;
                 var clientIds = {};
                 for (var i = 0; i < splitClientIds.length; i++) {
                     var clientId = splitClientIds[i];
-                    if (clientId.indexOf('-') !== -1) {
-                        clientIds.aadClientId = clientId;
-                        foundValidClientId = true;
-                    } else if (clientId.length > 0) {
+                    if (MSA_APPID_PATTERN.test(clientId)) {
                         clientIds.msaClientId = clientId;
-                        foundValidClientId = true;
+                    } else if (AAD_APPID_PATTERN.test(clientId)) {
+                        clientIds.aadClientId = clientId;
                     } else {
                         Logging.log('error');
                     }
-                }
-                if (!foundValidClientId) {
-                    Logging.log('error');
                 }
                 return clientIds;
             } else {
@@ -626,7 +623,7 @@ var FilesV2Helper = function () {
             var apiEndpoint = response.apiEndpoint;
             var queryParameters = {};
             queryParameters['expand'] = 'thumbnails';
-            queryParameters['select'] = 'id,@content.downloadUrl,name,size';
+            queryParameters['select'] = 'id,name,size';
             var requestHeaders = {};
             requestHeaders['Authorization'] = 'bearer ' + accessToken;
             var successObjects = [];
@@ -657,9 +654,9 @@ var FilesV2Helper = function () {
                 }
             };
             invokeCallbacks = function () {
-                if (totalResponses++ === numItems) {
+                if (++totalResponses === numItems) {
                     if (successObjects.length > 0) {
-                        success({ value: successObjects });
+                        success({ files: successObjects });
                     }
                     if (errorObjects.length > 0) {
                         error(errorObjects);
@@ -793,7 +790,7 @@ var PickerHelper = function () {
                 if (!response.files) {
                     Logging.log('no files');
                 }
-                PickerHelper._handleSuccessResponse(apiResponse, options, linkType, isWebLinkType);
+                PickerHelper._handleSuccessResponse(response, options, linkType, isWebLinkType);
             }, function (apiError) {
                 options.error(apiError);
             });
@@ -1000,8 +997,9 @@ var RedirectHelper = function () {
                 ];
             overlay.style.cssText = style.join(';');
             DomHelper.onDocumentReady(function () {
-                if (document.body !== null) {
-                    document.querySelector('body').insertBefore(overlay, document.querySelector('body').firstChild);
+                var documentBody = document.body;
+                if (documentBody !== null) {
+                    documentBody.insertBefore(overlay, documentBody.firstChild);
                 } else {
                     document.createElement('body').appendChild(overlay);
                 }
@@ -1294,9 +1292,6 @@ var StringHelper = function () {
                 return replacement;
             }
             return str.replace(FORMAT_REGEX, replace_func);
-        };
-        StringHelper.stringTrim = function (str) {
-            return str.replace(/^\s+|\s+$/g, '');
         };
         StringHelper.equalsCaseInsensitive = function (a, b) {
             if (a && b) {
