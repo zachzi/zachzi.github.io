@@ -1066,7 +1066,7 @@ var ResponseHelper = function () {
             }
         };
         ResponseHelper._handleAADResponse = function (state, queryParameters, result) {
-            result.accessToken = state.aad_access_token.accessToken;
+            result.accessToken = state.aad_access_token;
             result.apiEndpointUrl = state.discovery.apiEndpoint;
             result.apiEndpoint = ApiEndpoint.filesV2;
             result.itemIds = queryParameters['item-id'].split(',');
