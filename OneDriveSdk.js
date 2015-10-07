@@ -550,7 +550,7 @@ var CallbackHelper = function () {
                 args[_i - 1] = arguments[_i];
             }
             window.setTimeout(function () {
-                return callback.apply(null, args);
+                callback.apply(null, args);
             }, 0);
         };
         return CallbackHelper;
@@ -603,7 +603,7 @@ var DomHelper = function () {
             return document.getElementById(id);
         };
         DomHelper.onDocumentReady = function (callback) {
-            if (document.body && (document.readyState === 'interactive' || document.readyState === 'complete')) {
+            if (document.readyState === 'interactive' || document.readyState === 'complete') {
                 callback();
             } else {
                 document.addEventListener('DOMContentLoaded', callback, false);
@@ -866,6 +866,9 @@ var RedirectHelper = function () {
             if (serializedState['state']) {
                 queryParameters['state'] = serializedState['state'];
             }
+            if (queryParameters['access_token'] && queryParameters['scope']) {
+                queryParameters['state'] = 'msa_picker';
+            }
             var state = queryParameters['state'];
             if (!state) {
                 return;
@@ -990,7 +993,11 @@ var RedirectHelper = function () {
                 ];
             overlay.style.cssText = style.join(';');
             DomHelper.onDocumentReady(function () {
-                document.body.appendChild(overlay);
+                if (document.body !== null) {
+                    document.querySelector('body').insertBefore(overlay, document.querySelector('body').firstChild);
+                } else {
+                    document.createElement('body').appendChild(overlay);
+                }
             });
         };
         return RedirectHelper;
