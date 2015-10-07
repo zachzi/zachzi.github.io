@@ -856,8 +856,11 @@ var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
 var RedirectHelper = function () {
         function RedirectHelper() {
         }
-        RedirectHelper.redirect = function (url, values) {
-            WindowStateHelper.setWindowState(values);
+        RedirectHelper.redirect = function (url, values, windowState) {
+            if (windowState === void 0) {
+                windowState = null;
+            }
+            WindowStateHelper.setWindowState(values, windowState);
             window.location.replace(url);
         };
         RedirectHelper.handleRedirect = function () {
@@ -959,11 +962,12 @@ var RedirectHelper = function () {
                         value: 'aad_picker'
                     }
                 ];
-            var tenantUrl = queryParameters['resource'];
+            var windowState = WindowStateHelper.getWindowState();
+            var tenantUrl = windowState.discovery.tenantUrl;
             if (!tenantUrl) {
                 Logging.log('missing tenant url');
             }
-            RedirectHelper.redirect(UrlHelper.appendToPath(tenantUrl, 'MySiteRedirect.aspx?MySiteRedirect=AllDocuments#p=2'), stateValues);
+            RedirectHelper.redirect(UrlHelper.appendToPath(tenantUrl, 'MySiteRedirect.aspx?MySiteRedirect=AllDocuments#p=2'), stateValues, windowState);
         };
         RedirectHelper._sendResponse = function (response) {
             var pingTimeout = window.setTimeout(function () {
