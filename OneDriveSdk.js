@@ -633,7 +633,6 @@ var FilesV2Helper = function () {
             var invokeCallbacks;
             var runBatch = function (batchStart, batchEnd) {
                 for (var i = batchStart; i < batchEnd; i++) {
-                    var itemId = itemIds[i];
                     (function (itemId) {
                         var url = UrlHelper.appendToPath(apiEndpointUrl, 'drive/items/' + itemId);
                         var xhr = new XHR({
@@ -644,13 +643,13 @@ var FilesV2Helper = function () {
                                 headers: requestHeaders
                             });
                         xhr.start(function (xhr, statusCode) {
-                            successObjects.push(ObjectHelper.deserializeJSON(xhr.responseText).value);
+                            successObjects.push(ObjectHelper.deserializeJSON(xhr.responseText));
                             invokeCallbacks();
                         }, function (xhr, statusCode, timeout) {
                             errorObjects.push({ error: StringHelper.format('GET on item \'{0}\' failed with status code \'{1}', itemId, statusCode) });
                             invokeCallbacks();
                         });
-                    }(itemId));
+                    }(itemIds[i]));
                 }
             };
             invokeCallbacks = function () {
@@ -849,9 +848,10 @@ var PickerHelper = function () {
     }();
 module.exports = PickerHelper;
 },{"../Constants":1,"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./FilesV2Helper":15,"./Logging":16,"./ObjectHelper":17,"./RedirectHelper":19,"./VroomHelper":25}],19:[function(_dereq_,module,exports){
-var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
+var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
 var AAD_LOGIN_URL = 'https://login.microsoftonline.com/common/oauth2/authorize';
 var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
+var RESPONSE_TIMEOUT = 2000;
 var RedirectHelper = function () {
         function RedirectHelper() {
         }
@@ -972,7 +972,7 @@ var RedirectHelper = function () {
             var pingTimeout = window.setTimeout(function () {
                     Logging.log('ping missing');
                     window.close();
-                }, 2000);
+                }, RESPONSE_TIMEOUT);
             window.addEventListener('message', function (event) {
                 if (!Popup.canReceiveMessage(event)) {
                     return;
@@ -996,17 +996,19 @@ var RedirectHelper = function () {
                     'z-index: 10000'
                 ];
             overlay.style.cssText = style.join(';');
-            var documentBody = document.body;
-            if (documentBody !== null) {
-                documentBody.insertBefore(overlay, documentBody.firstChild);
-            } else {
-                document.createElement('body').appendChild(overlay);
-            }
+            DomHelper.onDocumentReady(function () {
+                var documentBody = document.body;
+                if (documentBody !== null) {
+                    documentBody.insertBefore(overlay, documentBody.firstChild);
+                } else {
+                    document.createElement('body').appendChild(overlay);
+                }
+            });
         };
         return RedirectHelper;
     }();
 module.exports = RedirectHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./Logging":16,"./ObjectHelper":17,"./TypeValidationHelper":23,"./UrlHelper":24,"./WindowStateHelper":26}],20:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./Logging":16,"./ObjectHelper":17,"./TypeValidationHelper":23,"./UrlHelper":24,"./WindowStateHelper":26}],20:[function(_dereq_,module,exports){
 var ApiEndpoint = _dereq_('../models/ApiEndpoint'), Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging');
 var CID_PADDING = '0000000000000000';
 var CID_PADDING_LENGTH = CID_PADDING.length;
