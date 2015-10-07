@@ -625,9 +625,10 @@ var FilesV2Helper = function () {
             var apiEndpointUrl = response.apiEndpointUrl;
             var apiEndpoint = response.apiEndpoint;
             var queryParameters = {};
-            queryParameters['access_token'] = accessToken;
             queryParameters['expand'] = 'thumbnails';
             queryParameters['select'] = 'id,@content.downloadUrl,name,size';
+            var requestHeaders = {};
+            requestHeaders['Authorization'] = 'bearer ' + accessToken;
             var successObjects = [];
             var errorObjects = [];
             var totalResponses = 0;
@@ -642,7 +643,8 @@ var FilesV2Helper = function () {
                                 url: UrlHelper.appendQueryStrings(url, queryParameters),
                                 clientId: clientId,
                                 method: Constants.HTTP_GET,
-                                apiEndpoint: apiEndpoint
+                                apiEndpoint: apiEndpoint,
+                                headers: requestHeaders
                             });
                         xhr.start(function (xhr, statusCode) {
                             successObjects.push(ObjectHelper.deserializeJSON(xhr.responseText).value);
