@@ -624,7 +624,7 @@ var FilesV2Helper = function () {
             var itemIds = response.itemIds;
             var apiEndpointUrl = response.apiEndpointUrl;
             var apiEndpoint = response.apiEndpoint;
-            var queryParameters;
+            var queryParameters = {};
             queryParameters['access_token'] = accessToken;
             queryParameters['expand'] = 'thumbnails';
             queryParameters['select'] = 'id,@content.downloadUrl,name,size';
