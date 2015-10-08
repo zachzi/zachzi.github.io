@@ -984,27 +984,38 @@ var RedirectHelper = function () {
         };
         RedirectHelper._displayOverlay = function () {
             var overlay = document.createElement('div');
-            var style = [
+            var overlayStyle = [
                     'position: fixed',
                     'width: 100%',
                     'height: 100%',
-                    'background: white url(https://p.sfx.ms/common/spinner_grey_40_transparent.gif) center center no-repeat',
+                    'top: 0px',
+                    'left: 0px',
+                    'background-color: white',
                     'opacity: 1',
                     'z-index: 10000'
                 ];
-            overlay.style.cssText = style.join(';');
-            var newStyle = document.createElement('style');
-            newStyle.type = 'text/css';
-            newStyle.innerHTML = 'body { visibility: hidden; }';
-            document.head.appendChild(newStyle);
+            overlay.style.cssText = overlayStyle.join(';');
+            var spinner = document.createElement('img');
+            spinner.src = 'https://p.sfx.ms/common/spinner_grey_40_transparent.gif';
+            var spinnerStyle = [
+                    'position: absolute',
+                    'top: calc(50% - 40px)',
+                    'left: calc(50% - 40px)'
+                ];
+            spinner.style.cssText = spinnerStyle.join(';');
+            overlay.appendChild(spinner);
+            var hiddenStyle = document.createElement('style');
+            hiddenStyle.type = 'text/css';
+            hiddenStyle.innerHTML = 'body { visibility: hidden !important; }';
+            document.head.appendChild(hiddenStyle);
             DomHelper.onDocumentReady(function () {
-                document.head.removeChild(newStyle);
                 var documentBody = document.body;
                 if (documentBody !== null) {
                     documentBody.insertBefore(overlay, documentBody.firstChild);
                 } else {
                     document.createElement('body').appendChild(overlay);
                 }
+                document.head.removeChild(hiddenStyle);
             });
         };
         return RedirectHelper;
