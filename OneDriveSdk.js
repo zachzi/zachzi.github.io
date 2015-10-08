@@ -865,7 +865,6 @@ var RedirectHelper = function () {
         RedirectHelper.handleRedirect = function () {
             var queryParameters = UrlHelper.readCurrentUrlParameters();
             var serializedState = WindowStateHelper.getWindowState();
-            debugger;
             if (queryParameters['access_token'] && queryParameters['scope'] || queryParameters['error'] === 'access_denied') {
                 queryParameters['state'] = 'msa_picker';
             }
@@ -881,7 +880,6 @@ var RedirectHelper = function () {
             if (openInNewWindow) {
                 RedirectHelper._displayOverlay();
             }
-            return;
             switch (state) {
             case 'discovery':
                 if (!openInNewWindow) {
