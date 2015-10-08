@@ -1068,6 +1068,7 @@ var ResponseHelper = function () {
             if (!itemIds.length) {
                 Logging.log('missing item ids');
             }
+            result.itemIds = itemIds;
         };
         ResponseHelper._leftPadCid = function (cid) {
             return CID_PADDING.substring(0, CID_PADDING_LENGTH - cid.length) + cid;
