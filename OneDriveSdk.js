@@ -865,13 +865,10 @@ var RedirectHelper = function () {
         RedirectHelper.handleRedirect = function () {
             var queryParameters = UrlHelper.readCurrentUrlParameters();
             var serializedState = WindowStateHelper.getWindowState();
-            if (serializedState['state']) {
-                queryParameters['state'] = serializedState['state'];
-            }
-            if (queryParameters['access_token'] && queryParameters['scope']) {
+            if (queryParameters['access_token'] && queryParameters['scope'] || queryParameters['error'] === 'access_denied') {
                 queryParameters['state'] = 'msa_picker';
             }
-            var state = queryParameters['state'];
+            var state = queryParameters['state'] || serializedState['state'];
             if (!state) {
                 return;
             }
@@ -1067,7 +1064,10 @@ var ResponseHelper = function () {
             result.accessToken = state.aad_access_token;
             result.apiEndpointUrl = state.discovery.apiEndpoint;
             result.apiEndpoint = ApiEndpoint.filesV2;
-            result.itemIds = queryParameters['item-id'].split(',');
+            var itemIds = queryParameters['item-id'].split(',');
+            if (!itemIds.length) {
+                Logging.log('missing item ids');
+            }
         };
         ResponseHelper._leftPadCid = function (cid) {
             return CID_PADDING.substring(0, CID_PADDING_LENGTH - cid.length) + cid;
@@ -1106,23 +1106,25 @@ var SaverHelper = function () {
             switch (pickerType) {
             case 'msa_picker':
                 VroomHelper.callVroomSave(saverResponse, function (apiResponse) {
-                    var values = apiResponse.value;
-                    if (!values) {
-                        Logging.log('missing response value node');
+                    var folderId = apiResponse.value && apiResponse.value[0] && apiResponse.value[0].id;
+                    if (!folderId || apiResponse.value.length !== 1) {
+                        Logging.log('incorrect number of folders returned');
                     }
-                    SaverHelper._executeUpload(saverResponse, options, values.map(function (value) {
-                        return value.id;
-                    }));
+                    SaverHelper._executeUpload(saverResponse, options, folderId);
                 }, function (apiError) {
                     options.error(apiError);
                 });
                 break;
             case 'aad_picker':
                 var folderIds = saverResponse.itemIds;
-                if (!folderIds) {
-                    Logging.log('missing folder id');
+                if (folderIds.length !== 1) {
+                    Logging.log('incorrect number of folders');
                 }
-                SaverHelper._executeUpload(saverResponse, options, folderIds);
+                var folderId = folderIds[0];
+                if (!folderId) {
+                    folderId = 'root';
+                }
+                SaverHelper._executeUpload(saverResponse, options, folderId);
                 break;
             default:
                 Logging.log('bad state ' + pickerType);
@@ -1135,11 +1137,7 @@ var SaverHelper = function () {
                 options.error(errorResponse);
             }
         };
-        SaverHelper._executeUpload = function (saverResponse, options, folderIds) {
-            var folderId = folderIds[0];
-            if (!folderId || folderIds.length !== 1) {
-                Logging.log('incorrect number of folders returned');
-            }
+        SaverHelper._executeUpload = function (saverResponse, options, folderId) {
             var accessToken = saverResponse.accessToken;
             var uploadType = options.uploadType;
             switch (uploadType) {
@@ -1200,7 +1198,6 @@ var SaverHelper = function () {
                 options.error({ error: 'probably comcast\'s fault ' + event.target.error.name });
             };
             reader.onload = function (event) {
-                var data = event.target.result;
                 var uploadUrl = UrlHelper.appendToPath(saverResponse.apiEndpointUrl, 'drive/items/' + folderId + '/children/' + options.fileName + '/content');
                 var queryParameters = {};
                 queryParameters['access_token'] = accessToken;
@@ -1211,6 +1208,7 @@ var SaverHelper = function () {
                         method: Constants.HTTP_POST,
                         apiEndpoint: saverResponse.apiEndpoint
                     });
+                var data = event.target.result;
                 xhr.upload(data, function (xhr, statusCode) {
                     options.success();
                 }, function (xhr, statusCode, timeout) {
