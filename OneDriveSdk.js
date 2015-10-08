@@ -993,9 +993,12 @@ var RedirectHelper = function () {
                     'z-index: 10000'
                 ];
             overlay.style.cssText = style.join(';');
-            document.body.style.visibility = 'hidden';
+            var newStyle = document.createElement('style');
+            newStyle.type = 'text/css';
+            newStyle.innerHTML = 'body { visibility: hidden; }';
+            document.head.appendChild(newStyle);
             DomHelper.onDocumentReady(function () {
-                document.body.style.visibility = 'visible';
+                document.head.removeChild(newStyle);
                 var documentBody = document.body;
                 if (documentBody !== null) {
                     documentBody.insertBefore(overlay, documentBody.firstChild);
