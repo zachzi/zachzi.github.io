@@ -881,6 +881,7 @@ var RedirectHelper = function () {
             if (openInNewWindow) {
                 RedirectHelper._displayOverlay();
             }
+            return;
             switch (state) {
             case 'discovery':
                 if (!openInNewWindow) {
