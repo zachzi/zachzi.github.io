@@ -2,7 +2,6 @@
 var Constants = function () {
         function Constants() {
         }
-        Constants.FORM_UPLOAD_SIZE_LIMIT = 104857600;
         Constants.HTTP_GET = 'GET';
         Constants.HTTP_POST = 'POST';
         Constants.LINKTYPE_WEB = 'webLink';
@@ -17,16 +16,14 @@ var Constants = function () {
     }();
 module.exports = Constants;
 },{}],2:[function(_dereq_,module,exports){
-var Constants = _dereq_('./Constants'), Logging = _dereq_('./utilities/Logging'), OneDriveApp = _dereq_('./OneDriveApp');
+var Constants = _dereq_('./Constants'), OneDriveApp = _dereq_('./OneDriveApp');
 var OneDrive = function () {
         function OneDrive() {
         }
         OneDrive.open = function (options) {
-            Logging.log('open started');
             OneDriveApp.open(options);
         };
         OneDrive.save = function (options) {
-            Logging.log('save started');
             OneDriveApp.save(options);
         };
         OneDrive.webLink = Constants.LINKTYPE_WEB;
@@ -35,14 +32,17 @@ var OneDrive = function () {
     }();
 OneDriveApp.onloadInit();
 module.exports = OneDrive;
-},{"./Constants":1,"./OneDriveApp":3,"./utilities/Logging":16}],3:[function(_dereq_,module,exports){
-var DomHelper = _dereq_('./utilities/DomHelper'), Logging = _dereq_('./utilities/Logging'), OneDriveState = _dereq_('./OneDriveState'), PickerHelper = _dereq_('./utilities/PickerHelper'), PickerOptions = _dereq_('./models/PickerOptions'), RedirectHelper = _dereq_('./utilities/RedirectHelper'), ResponseHelper = _dereq_('./utilities/ResponseHelper'), SaverHelper = _dereq_('./utilities/SaverHelper'), SaverOptions = _dereq_('./models/SaverOptions');
+},{"./Constants":1,"./OneDriveApp":3}],3:[function(_dereq_,module,exports){
+var DomHelper = _dereq_('./utilities/DomHelper'), ErrorHelper = _dereq_('./utilities/ErrorHelper'), Logging = _dereq_('./utilities/Logging'), OneDriveState = _dereq_('./OneDriveState'), PickerHelper = _dereq_('./utilities/PickerHelper'), PickerOptions = _dereq_('./models/PickerOptions'), RedirectHelper = _dereq_('./utilities/RedirectHelper'), ResponseHelper = _dereq_('./utilities/ResponseHelper'), SaverHelper = _dereq_('./utilities/SaverHelper'), SaverOptions = _dereq_('./models/SaverOptions');
 var OneDriveApp = function () {
         function OneDriveApp() {
         }
         OneDriveApp.onloadInit = function () {
-            Logging.log('initializing');
-            OneDriveState.clientIds = DomHelper.getClientIds();
+            ErrorHelper.registerErrorObserver(function () {
+                OneDriveState.clearState();
+            });
+            DomHelper.getScriptInput();
+            Logging.log('initialized');
             var redirectResponse = RedirectHelper.handleRedirect();
             if (!redirectResponse) {
                 return;
@@ -50,7 +50,8 @@ var OneDriveApp = function () {
             var pickerResponse = ResponseHelper.parsePickerResponse(redirectResponse);
             if (pickerResponse) {
                 var options = redirectResponse.state.options;
-                switch (options.mode) {
+                var mode = options.mode;
+                switch (mode) {
                 case 'open':
                     var pickerOptions = new PickerOptions(options);
                     if (pickerResponse.error) {
@@ -68,7 +69,7 @@ var OneDriveApp = function () {
                     }
                     break;
                 default:
-                    Logging.log('bad mode');
+                    ErrorHelper.throwError('invalid value for options.mode: ' + mode);
                 }
             } else {
                 Logging.log('couldn\'t parse response');
@@ -78,43 +79,45 @@ var OneDriveApp = function () {
             if (!OneDriveState.readyCheck()) {
                 return;
             }
+            if (!options) {
+                ErrorHelper.throwError('missing picker options');
+            }
+            Logging.log('open started');
             PickerHelper.run(options);
         };
         OneDriveApp.save = function (options) {
             if (!OneDriveState.readyCheck()) {
                 return;
             }
+            if (!options) {
+                ErrorHelper.throwError('missing saver options');
+            }
+            Logging.log('save started');
             SaverHelper.run(options);
         };
         return OneDriveApp;
     }();
 module.exports = OneDriveApp;
-},{"./OneDriveState":4,"./models/PickerOptions":9,"./models/SaverOptions":10,"./utilities/DomHelper":14,"./utilities/Logging":16,"./utilities/PickerHelper":18,"./utilities/RedirectHelper":19,"./utilities/ResponseHelper":20,"./utilities/SaverHelper":21}],4:[function(_dereq_,module,exports){
-var Logging = _dereq_('./utilities/Logging');
+},{"./OneDriveState":4,"./models/PickerOptions":9,"./models/SaverOptions":10,"./utilities/DomHelper":14,"./utilities/ErrorHelper":15,"./utilities/Logging":17,"./utilities/PickerHelper":19,"./utilities/RedirectHelper":20,"./utilities/ResponseHelper":21,"./utilities/SaverHelper":22}],4:[function(_dereq_,module,exports){
 var OneDriveState = function () {
         function OneDriveState() {
         }
         OneDriveState.clearState = function () {
-            OneDriveState._ready = true;
+            OneDriveState._sdkReady = true;
         };
         OneDriveState.readyCheck = function () {
-            if (!OneDriveState.clientIds) {
-                Logging.log('init error');
+            if (!OneDriveState.clientIds || !OneDriveState._sdkReady) {
                 return false;
             }
-            if (!OneDriveState._ready) {
-                Logging.log('popup open');
-                return false;
-            }
-            OneDriveState._ready = false;
+            OneDriveState._sdkReady = false;
             return true;
         };
-        OneDriveState._ready = true;
+        OneDriveState._sdkReady = true;
         return OneDriveState;
     }();
 module.exports = OneDriveState;
-},{"./utilities/Logging":16}],5:[function(_dereq_,module,exports){
-var Logging = _dereq_('./utilities/Logging'), ResponseHelper = _dereq_('./utilities/ResponseHelper');
+},{}],5:[function(_dereq_,module,exports){
+var CallbackHelper = _dereq_('./utilities/CallbackHelper'), Logging = _dereq_('./utilities/Logging'), ResponseHelper = _dereq_('./utilities/ResponseHelper');
 var POPUP_WIDTH = 800;
 var POPUP_HEIGHT = 650;
 var POPUP_PINGER_INTERVAL = 500;
@@ -142,9 +145,9 @@ var Popup = function () {
                         var response = ResponseHelper.parsePickerResponse(event.data);
                         currentPopup._messageCallbackInvoked = true;
                         if (response.error === undefined) {
-                            currentPopup._successCallback(response);
+                            CallbackHelper.invokeCallbackAsynchronous(currentPopup._successCallback, response);
                         } else {
-                            currentPopup._errorCallback(response);
+                            CallbackHelper.invokeCallbackAsynchronous(currentPopup._errorCallback, response);
                         }
                     }
                 });
@@ -199,7 +202,7 @@ var Popup = function () {
         return Popup;
     }();
 module.exports = Popup;
-},{"./utilities/Logging":16,"./utilities/ResponseHelper":20}],6:[function(_dereq_,module,exports){
+},{"./utilities/CallbackHelper":13,"./utilities/Logging":17,"./utilities/ResponseHelper":21}],6:[function(_dereq_,module,exports){
 var ApiEndpoint = _dereq_('./models/ApiEndpoint'), Constants = _dereq_('./Constants'), Logging = _dereq_('./utilities/Logging'), ObjectHelper = _dereq_('./utilities/ObjectHelper'), StringHelper = _dereq_('./utilities/StringHelper');
 var DEFAULT_TIMEOUT_MS = 30000;
 var EXCEPTION_STATUS = -1;
@@ -354,7 +357,7 @@ var XHR = function () {
         return XHR;
     }();
 module.exports = XHR;
-},{"./Constants":1,"./models/ApiEndpoint":7,"./utilities/Logging":16,"./utilities/ObjectHelper":17,"./utilities/StringHelper":22}],7:[function(_dereq_,module,exports){
+},{"./Constants":1,"./models/ApiEndpoint":7,"./utilities/Logging":17,"./utilities/ObjectHelper":18,"./utilities/StringHelper":23}],7:[function(_dereq_,module,exports){
 var ApiEndpoint;
 (function (ApiEndpoint) {
     ApiEndpoint[ApiEndpoint['filesV2'] = 0] = 'filesV2';
@@ -363,12 +366,9 @@ var ApiEndpoint;
 }(ApiEndpoint || (ApiEndpoint = {})));
 module.exports = ApiEndpoint;
 },{}],8:[function(_dereq_,module,exports){
-var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Logging = _dereq_('../utilities/Logging'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper');
+var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Logging = _dereq_('../utilities/Logging'), StringHelper = _dereq_('../utilities/StringHelper'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper');
 var InvokerOptions = function () {
         function InvokerOptions(options) {
-            if (!options) {
-                Logging.log('missing options');
-            }
             this.openInNewWindow = TypeValidationHelper.validateType(options.openInNewWindow, 'boolean', true, true);
             this.expectGlobalFunction = !this.openInNewWindow;
             if (this.expectGlobalFunction) {
@@ -377,18 +377,20 @@ var InvokerOptions = function () {
             }
             var cancelCallback = TypeValidationHelper.validateCallback(options.cancel, true, this.expectGlobalFunction);
             this.cancel = function () {
-                CallbackHelper.invokeAppCallback(cancelCallback, 'cancel', true, false, true);
+                Logging.log('user cancelled operation');
+                CallbackHelper.invokeAppCallback(cancelCallback, true);
             };
             var errorCallback = TypeValidationHelper.validateCallback(options.error, true, this.expectGlobalFunction);
             this.error = function (error) {
-                CallbackHelper.invokeAppCallback(errorCallback, 'error', true, false, true, error);
+                Logging.log(StringHelper.format('error occured - code: \'{0}\', message: \'{1}\'', error.errorCode, error.message));
+                CallbackHelper.invokeAppCallback(errorCallback, true, error);
             };
         }
         return InvokerOptions;
     }();
 module.exports = InvokerOptions;
-},{"../utilities/CallbackHelper":13,"../utilities/Logging":16,"../utilities/TypeValidationHelper":23}],9:[function(_dereq_,module,exports){
-var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Constants = _dereq_('../Constants'), InvokerOptions = _dereq_('./InvokerOptions'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper');
+},{"../utilities/CallbackHelper":13,"../utilities/Logging":17,"../utilities/StringHelper":23,"../utilities/TypeValidationHelper":24}],9:[function(_dereq_,module,exports){
+var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Constants = _dereq_('../Constants'), InvokerOptions = _dereq_('./InvokerOptions'), Logging = _dereq_('../utilities/Logging'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper');
 var VALID_LINKTYPE_VALUES = [
         Constants.LINKTYPE_DOWNLOAD,
         Constants.LINKTYPE_WEB
@@ -402,7 +404,8 @@ var PickerOptions = function (_super) {
             }
             var successCallback = TypeValidationHelper.validateCallback(options.success, false, this.expectGlobalFunction);
             this.success = function (files) {
-                CallbackHelper.invokeAppCallback(successCallback, 'success', false, false, true, files);
+                Logging.log('picker operation succeeded');
+                CallbackHelper.invokeAppCallback(successCallback, true, files);
             };
             this.multiSelect = TypeValidationHelper.validateType(options.multiSelect, 'boolean', true, false);
             this.linkType = TypeValidationHelper.validateType(options.linkType, 'string', true, Constants.LINKTYPE_WEB, VALID_LINKTYPE_VALUES);
@@ -410,74 +413,91 @@ var PickerOptions = function (_super) {
         return PickerOptions;
     }(InvokerOptions);
 module.exports = PickerOptions;
-},{"../Constants":1,"../utilities/CallbackHelper":13,"../utilities/TypeValidationHelper":23,"./InvokerOptions":8}],10:[function(_dereq_,module,exports){
-var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('../utilities/DomHelper'), InvokerOptions = _dereq_('./InvokerOptions'), Logging = _dereq_('../utilities/Logging'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper'), UploadType = _dereq_('./UploadType'), UrlHelper = _dereq_('../utilities/UrlHelper');
+},{"../Constants":1,"../utilities/CallbackHelper":13,"../utilities/Logging":17,"../utilities/TypeValidationHelper":24,"./InvokerOptions":8}],10:[function(_dereq_,module,exports){
+var CallbackHelper = _dereq_('../utilities/CallbackHelper'), DomHelper = _dereq_('../utilities/DomHelper'), ErrorHelper = _dereq_('../utilities/ErrorHelper'), InvokerOptions = _dereq_('./InvokerOptions'), Logging = _dereq_('../utilities/Logging'), StringHelper = _dereq_('../utilities/StringHelper'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper'), UploadType = _dereq_('./UploadType'), UrlHelper = _dereq_('../utilities/UrlHelper');
+var FORM_UPLOAD_SIZE_LIMIT = 104857600;
+var FORM_UPLOAD_SIZE_LIMIT_STRING = '100 MB';
 var SaverOptions = function (_super) {
         __extends(SaverOptions, _super);
         function SaverOptions(options) {
             _super.call(this, options);
+            this.invalidFile = false;
             if (this.expectGlobalFunction) {
                 this.successName = options.success;
                 this.progressName = options.progress;
             }
             var successCallback = TypeValidationHelper.validateCallback(options.success, false, this.expectGlobalFunction);
             this.success = function () {
-                CallbackHelper.invokeAppCallback(successCallback, 'success', false, false, true);
+                Logging.log('saver operation succeeded');
+                CallbackHelper.invokeAppCallback(successCallback, true);
             };
             var progressCallback = TypeValidationHelper.validateCallback(options.progress, true, this.expectGlobalFunction);
             this.progress = function (percentage) {
-                CallbackHelper.invokeAppCallback(progressCallback, 'progress', false, false, true, percentage);
+                Logging.log(StringHelper.format('upload progress {0}%', percentage));
+                CallbackHelper.invokeAppCallback(progressCallback, false, percentage);
             };
-            var file = TypeValidationHelper.validateType(options.file, 'string');
-            var fileName = TypeValidationHelper.validateType(options.fileName, 'string', true, null);
-            this._setFileInfo(file, fileName);
+            this._setFileInfo(options);
         }
-        SaverOptions.prototype._setFileInfo = function (file, fileName) {
-            if (UrlHelper.isPathFullUrl(file)) {
+        SaverOptions.prototype._setFileInfo = function (options) {
+            this.file = TypeValidationHelper.validateType(options.file, 'string');
+            var fileName = TypeValidationHelper.validateType(options.fileName, 'string', true, null);
+            if (UrlHelper.isPathFullUrl(this.file)) {
                 this.uploadType = UploadType.url;
-                this.fileName = fileName || UrlHelper.getFileNameFromUrl(file);
-            } else if (UrlHelper.isPathDataUrl(file)) {
+                this.fileName = fileName || UrlHelper.getFileNameFromUrl(this.file);
+                if (!this.fileName) {
+                    ErrorHelper.throwError('must supply a file name or a URL that ends with a file name');
+                }
+            } else if (UrlHelper.isPathDataUrl(this.file)) {
                 this.uploadType = UploadType.dataUrl;
                 this.fileName = fileName;
                 if (!this.fileName) {
-                    Logging.log('missing filename');
+                    ErrorHelper.throwError('must supply a file name for data URL uploads');
                 }
             } else {
                 this.uploadType = UploadType.form;
-                var fileInputElement = DomHelper.getElementById(file);
+                var fileInputElement = DomHelper.getElementById(this.file);
                 if (fileInputElement instanceof HTMLInputElement) {
                     if (fileInputElement.type !== 'file') {
-                        Logging.log('bad type - file');
+                        ErrorHelper.throwError('input elemenet must be of type \'file\'');
                     }
                     if (!fileInputElement.value) {
-                        Logging.log('bad type - value');
+                        this.error({
+                            errorCode: 0,
+                            message: 'user has not supplied a file to upload'
+                        });
+                        this.invalidFile = true;
+                        return;
                     }
                     var files = fileInputElement.files;
                     if (!files || !window['FileReader']) {
-                        Logging.log('files API not supported');
+                        ErrorHelper.throwError('browser does not support Files API');
                     }
                     if (files.length !== 1) {
-                        Logging.log('files');
+                        ErrorHelper.throwError('can not upload more than one file at a time');
                     }
                     var fileInput = files[0];
                     if (!fileInput) {
-                        Logging.log('missing file input');
+                        ErrorHelper.throwError('missing file input');
                     }
-                    if (fileInput.size > Constants.FORM_UPLOAD_SIZE_LIMIT) {
-                        Logging.log('file size');
+                    if (fileInput.size > FORM_UPLOAD_SIZE_LIMIT) {
+                        this.error({
+                            errorCode: 1,
+                            message: 'the user has selected a file larger than ' + FORM_UPLOAD_SIZE_LIMIT_STRING
+                        });
+                        this.invalidFile = true;
+                        return;
                     }
                     this.fileName = fileName || fileInput.name;
                     this.fileInput = fileInput;
                 } else {
-                    Logging.log('error');
+                    ErrorHelper.throwError('element was not an instance of an HTMLInputElement');
                 }
             }
-            this.file = file;
         };
         return SaverOptions;
     }(InvokerOptions);
 module.exports = SaverOptions;
-},{"../Constants":1,"../utilities/CallbackHelper":13,"../utilities/DomHelper":14,"../utilities/Logging":16,"../utilities/TypeValidationHelper":23,"../utilities/UrlHelper":24,"./InvokerOptions":8,"./UploadType":11}],11:[function(_dereq_,module,exports){
+},{"../utilities/CallbackHelper":13,"../utilities/DomHelper":14,"../utilities/ErrorHelper":15,"../utilities/Logging":17,"../utilities/StringHelper":23,"../utilities/TypeValidationHelper":24,"../utilities/UrlHelper":25,"./InvokerOptions":8,"./UploadType":11}],11:[function(_dereq_,module,exports){
 var UploadType;
 (function (UploadType) {
     UploadType[UploadType['dataUrl'] = 0] = 'dataUrl';
@@ -486,7 +506,7 @@ var UploadType;
 }(UploadType || (UploadType = {})));
 module.exports = UploadType;
 },{}],12:[function(_dereq_,module,exports){
-var OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper');
+var Logging = _dereq_('./Logging'), OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper');
 var ACCOUNT_CHOOSER_URL = 'https://onedrive.live.com/picker/accountchooser';
 var AccountChooserHelper = function () {
         function AccountChooserHelper() {
@@ -514,35 +534,28 @@ var AccountChooserHelper = function () {
             queryParameters['access'] = access;
             queryParameters['selection_mode'] = selectionMode;
             queryParameters['view_type'] = viewType;
-            return UrlHelper.appendQueryStrings(ACCOUNT_CHOOSER_URL, queryParameters);
+            var fullUrl = UrlHelper.appendQueryStrings(ACCOUNT_CHOOSER_URL, queryParameters);
+            Logging.log('invoking account chooser: ' + fullUrl);
+            return fullUrl;
         };
         return AccountChooserHelper;
     }();
 module.exports = AccountChooserHelper;
-},{"../OneDriveState":4,"./UrlHelper":24}],13:[function(_dereq_,module,exports){
-var Logging = _dereq_('./Logging'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper');
+},{"../OneDriveState":4,"./Logging":17,"./UrlHelper":25}],13:[function(_dereq_,module,exports){
+var OneDriveState = _dereq_('../OneDriveState');
 var CallbackHelper = function () {
         function CallbackHelper() {
         }
-        CallbackHelper.invokeAppCallback = function (callback, name, optional, isSynchronous, isFinal) {
+        CallbackHelper.invokeAppCallback = function (callback, isFinalCallback) {
             var args = [];
-            for (var _i = 5; _i < arguments.length; _i++) {
-                args[_i - 5] = arguments[_i];
+            for (var _i = 2; _i < arguments.length; _i++) {
+                args[_i - 2] = arguments[_i];
             }
-            Logging.log(StringHelper.format('invoking \'{0}\' callback', name));
-            if (isFinal) {
+            if (isFinalCallback) {
                 OneDriveState.clearState();
             }
-            if (typeof callback !== 'function') {
-                if (optional) {
-                    return;
-                }
-                Logging.log('missing callback');
-            }
-            if (isSynchronous) {
+            if (typeof callback === 'function') {
                 callback.apply(null, args);
-            } else {
-                CallbackHelper.invokeCallbackAsynchronous(callback, args);
             }
         };
         CallbackHelper.invokeCallbackAsynchronous = function (callback) {
@@ -557,43 +570,49 @@ var CallbackHelper = function () {
         return CallbackHelper;
     }();
 module.exports = CallbackHelper;
-},{"../OneDriveState":4,"./Logging":16,"./StringHelper":22}],14:[function(_dereq_,module,exports){
-var Logging = _dereq_('./Logging');
+},{"../OneDriveState":4}],14:[function(_dereq_,module,exports){
+var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper');
 var DOM_CLIENT_ID = 'client-id';
+var DOM_LOGGING_ID = 'disable-logging';
 var DOM_SDK_ID = 'onedrive-js';
 var MSA_APPID_PATTERN = new RegExp('^([a-fA-F0-9]){16}$');
 var AAD_APPID_PATTERN = new RegExp('^[a-fA-F\\d]{8}-([a-fA-F\\d]{4}-){3}[a-fA-F\\d]{12}$');
 var DomHelper = function () {
         function DomHelper() {
         }
-        DomHelper.getClientIds = function () {
+        DomHelper.getScriptInput = function () {
             var element = DomHelper.getElementById(DOM_SDK_ID);
             if (element) {
-                var id = element.getAttribute(DOM_CLIENT_ID);
-                if (!id) {
-                    Logging.log('error');
+                var disableLogging = element.getAttribute(DOM_LOGGING_ID);
+                if (disableLogging === 'true') {
+                    Logging.loggingEnabled = false;
                 }
-                var splitClientIds = id.split(',').map(function (str) {
+                var rawClientIds = element.getAttribute(DOM_CLIENT_ID);
+                if (!rawClientIds) {
+                    ErrorHelper.throwError(StringHelper.format('SDK script tag missing \'{0}\' attribute', DOM_CLIENT_ID));
+                }
+                var splitClientIds = rawClientIds.split(',').map(function (str) {
                         return str.trim();
                     });
                 if (splitClientIds.length < 1 || splitClientIds.length > 2) {
-                    Logging.log('error');
+                    ErrorHelper.throwError('expected 1 or 2 client ids');
                 }
                 var clientIds = {};
                 for (var i = 0; i < splitClientIds.length; i++) {
                     var clientId = splitClientIds[i];
                     if (MSA_APPID_PATTERN.test(clientId)) {
+                        Logging.log('parsed MSA client id: ' + clientId);
                         clientIds.msaClientId = clientId;
                     } else if (AAD_APPID_PATTERN.test(clientId)) {
+                        Logging.log('parsed AAD client id: ' + clientId);
                         clientIds.aadClientId = clientId;
                     } else {
-                        Logging.log('error');
+                        ErrorHelper.throwError(StringHelper.format('invalid format for client id \'{0}\' - MSA: 16 characters (HEX), AAD: 32 characters (HEX) GUID', clientId));
                     }
                 }
-                return clientIds;
+                OneDriveState.clientIds = clientIds;
             } else {
-                Logging.log('error');
-                return null;
+                ErrorHelper.throwError(StringHelper.format('SDK script tag missing \'{0} id', DOM_SDK_ID));
             }
         };
         DomHelper.getElementById = function (id) {
@@ -609,7 +628,31 @@ var DomHelper = function () {
         return DomHelper;
     }();
 module.exports = DomHelper;
-},{"./Logging":16}],15:[function(_dereq_,module,exports){
+},{"../OneDriveState":4,"./ErrorHelper":15,"./Logging":17,"./StringHelper":23}],15:[function(_dereq_,module,exports){
+var Logging = _dereq_('./Logging');
+var ERROR_PREFIX = '[OneDriveSDK Error] ';
+var ErrorHelper = function () {
+        function ErrorHelper() {
+        }
+        ErrorHelper.registerErrorObserver = function (callback) {
+            ErrorHelper._errorObservers.push(callback);
+        };
+        ErrorHelper.throwError = function (message) {
+            var callbacks = ErrorHelper._errorObservers;
+            for (var i = 0; i < callbacks.length; i++) {
+                try {
+                    callbacks[i]();
+                } catch (error) {
+                    Logging.log(error.message);
+                }
+            }
+            throw new Error(ERROR_PREFIX + message);
+        };
+        ErrorHelper._errorObservers = [];
+        return ErrorHelper;
+    }();
+module.exports = ErrorHelper;
+},{"./Logging":17}],16:[function(_dereq_,module,exports){
 var Constants = _dereq_('../Constants'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
 var BATCH_SIZE = 10;
 var FilesV2Helper = function () {
@@ -669,29 +712,21 @@ var FilesV2Helper = function () {
         return FilesV2Helper;
     }();
 module.exports = FilesV2Helper;
-},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./ObjectHelper":17,"./StringHelper":22,"./UrlHelper":24}],16:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./ObjectHelper":18,"./StringHelper":23,"./UrlHelper":25}],17:[function(_dereq_,module,exports){
+var LOG_PREFIX = '[OneDriveSDK] ';
 var Logging = function () {
         function Logging() {
         }
-        Logging.log = function (message, errorLevel) {
-            if (errorLevel === void 0) {
-                errorLevel = '';
-            }
-            switch (errorLevel) {
-            case 'warning':
-                console.warn(message);
-                break;
-            case 'error':
-                console.error(message);
-                break;
-            default:
-                console.log(message);
+        Logging.log = function (message) {
+            if (Logging.loggingEnabled) {
+                console.log(LOG_PREFIX + message);
             }
         };
+        Logging.loggingEnabled = true;
         return Logging;
     }();
 module.exports = Logging;
-},{}],17:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 var Logging = _dereq_('./Logging');
 var ObjectHelper = function () {
         function ObjectHelper() {
@@ -708,15 +743,12 @@ var ObjectHelper = function () {
             }
             return clonedObject;
         };
-        ObjectHelper.isNullOrUndefinied = function (object) {
-            return object === null || object === undefined;
-        };
         ObjectHelper.deserializeJSON = function (text) {
             var deserializedObject = null;
             try {
                 deserializedObject = JSON.parse(text);
             } catch (error) {
-                Logging.log('deserialization error ' + error);
+                Logging.log('deserialization error: ' + error.message);
             }
             if (typeof deserializedObject !== 'object' || deserializedObject === null) {
                 deserializedObject = {};
@@ -729,7 +761,7 @@ var ObjectHelper = function () {
         return ObjectHelper;
     }();
 module.exports = ObjectHelper;
-},{"./Logging":16}],18:[function(_dereq_,module,exports){
+},{"./Logging":17}],19:[function(_dereq_,module,exports){
 var AccountChooserHelper = _dereq_('./AccountChooserHelper'), Constants = _dereq_('../Constants'), FilesV2Helper = _dereq_('./FilesV2Helper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), VroomHelper = _dereq_('./VroomHelper');
 var VROOM_THUMBNAIL_SIZES = [
         'large',
@@ -743,7 +775,6 @@ var PickerHelper = function () {
             var clonedOptions = ObjectHelper.shallowClone(options);
             var pickerOptions = new PickerOptions(clonedOptions);
             var url = AccountChooserHelper.buildAccountChooserUrlForPicker(pickerOptions);
-            Logging.log('invoking account chooser: ' + url);
             var windowState = PickerHelper._createWindowName(pickerOptions);
             if (pickerOptions.openInNewWindow) {
                 var popup = new Popup(url, ObjectHelper.serializeJSON(windowState), function (response) {
@@ -797,12 +828,18 @@ var PickerHelper = function () {
         PickerHelper._handleAADOpenResponse = function (pickerResponse, options, linkType, isWebLinkType) {
             FilesV2Helper.callFilesV2Open(pickerResponse, isWebLinkType, function (apiResponse) {
                 if (isWebLinkType) {
-                    options.error({ error: 'web link not supported for AAD' });
+                    options.error({
+                        errorCode: -1,
+                        message: 'web link not supported for AAD'
+                    });
                     return;
                 }
                 PickerHelper._handleSuccessResponse(apiResponse, options, linkType, isWebLinkType);
             }, function (apiError) {
-                options.error(apiError);
+                options.error({
+                    errorCode: -1,
+                    message: 'foo'
+                });
             });
         };
         PickerHelper._handleSuccessResponse = function (response, options, linkType, isWebLinkType) {
@@ -847,7 +884,7 @@ var PickerHelper = function () {
         return PickerHelper;
     }();
 module.exports = PickerHelper;
-},{"../Constants":1,"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./FilesV2Helper":15,"./Logging":16,"./ObjectHelper":17,"./RedirectHelper":19,"./VroomHelper":25}],19:[function(_dereq_,module,exports){
+},{"../Constants":1,"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./FilesV2Helper":16,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./VroomHelper":26}],20:[function(_dereq_,module,exports){
 var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
 var AAD_LOGIN_URL = 'https://login.microsoftonline.com/common/oauth2/authorize';
 var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
@@ -865,11 +902,11 @@ var RedirectHelper = function () {
         RedirectHelper.handleRedirect = function () {
             var queryParameters = UrlHelper.readCurrentUrlParameters();
             var serializedState = WindowStateHelper.getWindowState();
-            if (queryParameters['access_token'] && queryParameters['scope'] || queryParameters['error'] === 'access_denied') {
+            if (queryParameters['error'] === 'access_denied') {
                 queryParameters['state'] = 'msa_picker';
             }
-            var state = queryParameters['state'] || serializedState['state'];
-            if (!state) {
+            var redirectState = queryParameters['state'] || serializedState['state'];
+            if (!redirectState) {
                 return;
             }
             var options = serializedState['options'];
@@ -880,7 +917,7 @@ var RedirectHelper = function () {
             if (openInNewWindow) {
                 RedirectHelper._displayOverlay();
             }
-            switch (state) {
+            switch (redirectState) {
             case 'discovery':
                 if (!openInNewWindow) {
                     RedirectHelper._displayOverlay();
@@ -906,7 +943,7 @@ var RedirectHelper = function () {
                 }
                 break;
             default:
-                Logging.log('bad state ' + state);
+                Logging.log('bad state ' + redirectState);
             }
             return null;
         };
@@ -1021,15 +1058,16 @@ var RedirectHelper = function () {
         return RedirectHelper;
     }();
 module.exports = RedirectHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./Logging":16,"./ObjectHelper":17,"./TypeValidationHelper":23,"./UrlHelper":24,"./WindowStateHelper":26}],20:[function(_dereq_,module,exports){
-var ApiEndpoint = _dereq_('../models/ApiEndpoint'), Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging');
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./Logging":17,"./ObjectHelper":18,"./TypeValidationHelper":24,"./UrlHelper":25,"./WindowStateHelper":27}],21:[function(_dereq_,module,exports){
+var ApiEndpoint = _dereq_('../models/ApiEndpoint'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging');
 var CID_PADDING = '0000000000000000';
 var CID_PADDING_LENGTH = CID_PADDING.length;
-var MSA_SCOPE_RESPONSE_PATTERN = new RegExp('^\\w+\\.\\w+:\\w+[\\|\\w+]+:([\\w]+\\!\\d+)(?:\\!(.+))*');
+var MSA_SCOPE_RESPONSE_PATTERN = new RegExp('^\\w+\\.\\w+:\\w+[\\|\\w+]+:([\\w]+\\!\\d+)(?:\\!(.+))*$');
 var ResponseHelper = function () {
         function ResponseHelper() {
         }
         ResponseHelper.parsePickerResponse = function (response) {
+            var serializedState = response.state;
             var queryParameters = response.queryParameters;
             var responseError = queryParameters['error'];
             if (responseError) {
@@ -1042,10 +1080,10 @@ var ResponseHelper = function () {
                 ResponseHelper._handleMSAResponse(queryParameters, result);
                 break;
             case 'aad_picker':
-                ResponseHelper._handleAADResponse(response.state, queryParameters, result);
+                ResponseHelper._handleAADResponse(serializedState, queryParameters, result);
                 break;
             default:
-                Logging.log('bad state ' + pickerType);
+                ErrorHelper.throwError('invalid value for picker type: ' + pickerType);
             }
             return result;
         };
@@ -1057,23 +1095,18 @@ var ResponseHelper = function () {
             var scopeResult = MSA_SCOPE_RESPONSE_PATTERN.exec(responseScope);
             if (scopeResult) {
                 var rawResult = scopeResult[1].split('_');
-                var selectionString = rawResult[0];
                 var rawItemId = rawResult[1];
                 var splitIndex = rawItemId.indexOf('!');
                 var rawItemIdPart1 = rawItemId.substring(0, splitIndex);
                 var rawItemIdPart2 = rawItemId.substring(splitIndex);
                 var ownerCid = ResponseHelper._leftPadCid(rawItemIdPart1);
                 var itemId = ownerCid + rawItemIdPart2;
-                result.resourceId = [
-                    selectionString,
-                    ownerCid,
-                    itemId
-                ].join('.');
                 result.ownerCid = ownerCid;
                 result.itemId = itemId;
                 result.authKey = result[2];
+                Logging.log('parsed MSA response for item: ' + itemId);
             } else {
-                Logging.log('scope error ' + responseScope);
+                ErrorHelper.throwError('scope was not formatted correctly');
             }
         };
         ResponseHelper._handleAADResponse = function (state, queryParameters, result) {
@@ -1082,7 +1115,7 @@ var ResponseHelper = function () {
             result.apiEndpoint = ApiEndpoint.filesV2;
             var itemIds = queryParameters['item-id'].split(',');
             if (!itemIds.length) {
-                Logging.log('missing item ids');
+                ErrorHelper.throwError('missing item id(s)');
             }
             result.itemIds = itemIds;
         };
@@ -1092,7 +1125,7 @@ var ResponseHelper = function () {
         return ResponseHelper;
     }();
 module.exports = ResponseHelper;
-},{"../Constants":1,"../models/ApiEndpoint":7,"./Logging":16}],21:[function(_dereq_,module,exports){
+},{"../Constants":1,"../models/ApiEndpoint":7,"./ErrorHelper":15,"./Logging":17}],22:[function(_dereq_,module,exports){
 var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
 var POLLING_INTERVAL = 1000;
 var POLLING_COUNTER = 5;
@@ -1102,8 +1135,10 @@ var SaverHelper = function () {
         SaverHelper.run = function (options) {
             var clonedOptions = ObjectHelper.shallowClone(options);
             var saverOptions = new SaverOptions(clonedOptions);
+            if (saverOptions.invalidFile) {
+                return;
+            }
             var url = AccountChooserHelper.buildAccountChooserUrlForSaver();
-            Logging.log('invoking account chooser: ' + url);
             var windowState = SaverHelper._createWindowName(saverOptions);
             if (saverOptions.openInNewWindow) {
                 var popup = new Popup(url, ObjectHelper.serializeJSON(windowState), function (response) {
@@ -1193,14 +1228,23 @@ var SaverHelper = function () {
                 } else if (uploadType === UploadType.url && statusCode === 202) {
                     var location_1 = xhr.getResponseHeader('Location');
                     if (!location_1) {
-                        options.error({ error: 'probably comcast\'s fault' });
+                        options.error({
+                            errorCode: -1,
+                            message: 'foo'
+                        });
                     }
                     SaverHelper._beginPolling(options, location_1, accessToken);
                 } else {
-                    options.error({ error: 'probably comcast\'s fault' });
+                    options.error({
+                        errorCode: -1,
+                        message: 'foo'
+                    });
                 }
             }, function (xhr, statusCode, timeout) {
-                options.error({ error: 'probably comcast\'s fault' });
+                options.error({
+                    errorCode: -1,
+                    message: 'foo'
+                });
             });
         };
         SaverHelper._executeFormUpload = function (saverResponse, options, folderId, accessToken) {
@@ -1212,7 +1256,10 @@ var SaverHelper = function () {
                 Logging.log('file reader not supported');
             }
             reader.onerror = function (event) {
-                options.error({ error: 'probably comcast\'s fault ' + event.target.error.name });
+                options.error({
+                    errorCode: -1,
+                    message: 'foo' + event.target.error.name
+                });
             };
             reader.onload = function (event) {
                 var uploadUrl = UrlHelper.appendToPath(saverResponse.apiEndpointUrl, 'drive/items/' + folderId + '/children/' + options.fileName + '/content');
@@ -1229,7 +1276,10 @@ var SaverHelper = function () {
                 xhr.upload(data, function (xhr, statusCode) {
                     options.success();
                 }, function (xhr, statusCode, timeout) {
-                    options.error({ error: 'probably comcast\'s fault' });
+                    options.error({
+                        errorCode: -1,
+                        message: 'foo'
+                    });
                 }, function (xhr, uploadProgress) {
                     options.progress(uploadProgress.progressPercentage);
                 });
@@ -1261,10 +1311,16 @@ var SaverHelper = function () {
                         options.success();
                         break;
                     default:
-                        options.error({ error: 'probably comcast\'s fault' });
+                        options.error({
+                            errorCode: -1,
+                            message: 'foo'
+                        });
                     }
                 }, function (xhr, statusCode, timeout) {
-                    options.error({ error: 'probably comcast\'s fault' });
+                    options.error({
+                        errorCode: -1,
+                        message: 'foo'
+                    });
                 });
             };
             CallbackHelper.invokeCallbackAsynchronous(pollForProgress, pollingInterval);
@@ -1287,7 +1343,7 @@ var SaverHelper = function () {
         return SaverHelper;
     }();
 module.exports = SaverHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./Logging":16,"./ObjectHelper":17,"./RedirectHelper":19,"./UrlHelper":24,"./VroomHelper":25}],22:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./UrlHelper":25,"./VroomHelper":26}],23:[function(_dereq_,module,exports){
 var FORMAT_ARGS_REGEX = /[\{\}]/g;
 var FORMAT_REGEX = /\{\d+\}/g;
 var StringHelper = function () {
@@ -1298,15 +1354,14 @@ var StringHelper = function () {
             for (var _i = 1; _i < arguments.length; _i++) {
                 values[_i - 1] = arguments[_i];
             }
-            var args = values;
-            function replace_func(match) {
-                var replacement = args[match.replace(FORMAT_ARGS_REGEX, '')];
+            var replacer = function (match) {
+                var replacement = values[match.replace(FORMAT_ARGS_REGEX, '')];
                 if (replacement === null) {
                     replacement = '';
                 }
                 return replacement;
-            }
-            return str.replace(FORMAT_REGEX, replace_func);
+            };
+            return str.replace(FORMAT_REGEX, replacer);
         };
         StringHelper.equalsCaseInsensitive = function (a, b) {
             if (a && b) {
@@ -1317,8 +1372,8 @@ var StringHelper = function () {
         return StringHelper;
     }();
 module.exports = StringHelper;
-},{}],23:[function(_dereq_,module,exports){
-var Logging = _dereq_('./Logging');
+},{}],24:[function(_dereq_,module,exports){
+var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), StringHelper = _dereq_('./StringHelper');
 var TypeValidationHelper = function () {
         function TypeValidationHelper() {
         }
@@ -1329,18 +1384,20 @@ var TypeValidationHelper = function () {
             if (object === undefined) {
                 if (optional) {
                     if (defaultValue === undefined) {
-                        Logging.log('bad default value');
+                        ErrorHelper.throwError('default value missing');
                     }
+                    Logging.log('applying default value: ' + defaultValue);
                     return defaultValue;
                 } else {
-                    Logging.log('missing');
+                    ErrorHelper.throwError('object was missing and not optional');
                 }
             }
-            if (typeof object !== expectedType) {
-                Logging.log('bad object type');
+            var objectType = typeof object;
+            if (objectType !== expectedType) {
+                ErrorHelper.throwError(StringHelper.format('expected object type: \'{0}\', actual object type: \'{1}', expectedType, objectType));
             }
             if (!TypeValidationHelper._isValidValue(object, validValues)) {
-                Logging.log('invalid value');
+                ErrorHelper.throwError(StringHelper.format('object does not match any valid values: \'{0}\'', ObjectHelper.serializeJSON(validValues)));
             }
             return object;
         };
@@ -1355,12 +1412,12 @@ var TypeValidationHelper = function () {
                 if (optional) {
                     return null;
                 } else {
-                    Logging.log('undefined');
+                    ErrorHelper.throwError('function was missing and not optional');
                 }
             }
             var functionType = typeof functionOption;
             if (functionType !== 'string' && functionType !== 'function') {
-                Logging.log('bad type ' + functionType);
+                ErrorHelper.throwError(StringHelper.format('expected function type: \'function | string\', actual type: \'{0}\'', functionType));
             }
             var returnFunction = null;
             if (functionType === 'string') {
@@ -1368,17 +1425,17 @@ var TypeValidationHelper = function () {
                 if (typeof globalFunction === 'function') {
                     returnFunction = globalFunction;
                 } else {
-                    Logging.log('missing callback');
+                    ErrorHelper.throwError(StringHelper.format('could not find a function with name \'{0}\' on the window object', functionOption));
                 }
             } else if (expectGlobalFunction) {
-                Logging.log('bad type');
+                ErrorHelper.throwError('expected a global function');
             } else {
                 returnFunction = functionOption;
             }
             return returnFunction;
         };
         TypeValidationHelper._isValidValue = function (object, validValues) {
-            if (!validValues) {
+            if (!Array.isArray(validValues)) {
                 return true;
             }
             for (var i = 0; i < validValues.length; i++) {
@@ -1391,8 +1448,8 @@ var TypeValidationHelper = function () {
         return TypeValidationHelper;
     }();
 module.exports = TypeValidationHelper;
-},{"./Logging":16}],24:[function(_dereq_,module,exports){
-var ObjectHelper = _dereq_('./ObjectHelper'), StringHelper = _dereq_('./StringHelper');
+},{"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./StringHelper":23}],25:[function(_dereq_,module,exports){
+var StringHelper = _dereq_('./StringHelper');
 var UrlHelper = function () {
         function UrlHelper() {
         }
@@ -1400,7 +1457,7 @@ var UrlHelper = function () {
             return baseUrl + (baseUrl.charAt(baseUrl.length - 1) !== '/' ? '/' : '') + path;
         };
         UrlHelper.appendQueryStrings = function (baseUrl, queryParameters) {
-            if (ObjectHelper.isNullOrUndefinied(queryParameters) || Object.keys(queryParameters).length === 0) {
+            if (!queryParameters || Object.keys(queryParameters).length === 0) {
                 return baseUrl;
             }
             if (baseUrl.indexOf('?') === -1) {
@@ -1435,19 +1492,21 @@ var UrlHelper = function () {
             return queryParamters;
         };
         UrlHelper.trimUrlQuery = function (url) {
-            var queryStart = url.indexOf('?');
-            if (queryStart > 0) {
-                url = url.substring(0, queryStart);
-            }
-            queryStart = url.indexOf('#');
-            if (queryStart > 0) {
-                url = url.substring(0, queryStart);
+            var separators = [
+                    '?',
+                    '#'
+                ];
+            for (var index in separators) {
+                var charIndex = url.indexOf(separators[index]);
+                if (charIndex > 0) {
+                    url = url.substring(0, charIndex);
+                }
             }
             return url;
         };
         UrlHelper.getFileNameFromUrl = function (url) {
-            var trimmedUrl = UrlHelper.trimUrlQuery(url), index = trimmedUrl.lastIndexOf('/') + 1;
-            return trimmedUrl.substr(index);
+            var trimmedUrl = UrlHelper.trimUrlQuery(url);
+            return trimmedUrl.substr(trimmedUrl.lastIndexOf('/') + 1);
         };
         UrlHelper.isPathFullUrl = function (path) {
             return path.indexOf('https://') === 0 || path.indexOf('http://') === 0;
@@ -1467,7 +1526,7 @@ var UrlHelper = function () {
         return UrlHelper;
     }();
 module.exports = UrlHelper;
-},{"./ObjectHelper":17,"./StringHelper":22}],25:[function(_dereq_,module,exports){
+},{"./StringHelper":23}],26:[function(_dereq_,module,exports){
 var Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
 var VroomHelper = function () {
         function VroomHelper() {
@@ -1481,12 +1540,8 @@ var VroomHelper = function () {
         VroomHelper._callVroom = function (response, generateSharingLinks, isSaver, success, error) {
             var accessToken = response.accessToken;
             var ownerCid = response.ownerCid;
-            var resourceId = response.resourceId;
             var itemId = response.itemId;
             var authKey = response.authKey;
-            if (!resourceId) {
-                Logging.log('missing resource id');
-            }
             if (!authKey && generateSharingLinks) {
                 Logging.log('missing auth key');
             }
@@ -1524,8 +1579,8 @@ var VroomHelper = function () {
         return VroomHelper;
     }();
 module.exports = VroomHelper;
-},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./Logging":16,"./ObjectHelper":17,"./UrlHelper":24}],26:[function(_dereq_,module,exports){
-var Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper');
+},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./Logging":17,"./ObjectHelper":18,"./UrlHelper":25}],27:[function(_dereq_,module,exports){
+var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), StringHelper = _dereq_('./StringHelper');
 var WindowStateHelper = function () {
         function WindowStateHelper() {
         }
@@ -1540,17 +1595,20 @@ var WindowStateHelper = function () {
                 windowState = WindowStateHelper.getWindowState();
             }
             for (var i = 0; i < values.length; i++) {
-                var currentValue = values[i];
-                if (windowState[currentValue.key] !== undefined) {
-                    Logging.log('window name error');
+                var value = values[i];
+                var key = value.key;
+                if (windowState[key] !== undefined) {
+                    ErrorHelper.throwError(StringHelper.format('window.name object already has a value for key: \'{0}\'', key));
                 }
-                windowState[currentValue.key] = currentValue.value;
+                windowState[key] = value.value;
             }
-            window.name = ObjectHelper.serializeJSON(windowState);
+            var serializedWindowState = ObjectHelper.serializeJSON(windowState);
+            Logging.log('window.name = ' + serializedWindowState);
+            window.name = serializedWindowState;
         };
         return WindowStateHelper;
     }();
 module.exports = WindowStateHelper;
-},{"./Logging":16,"./ObjectHelper":17}]},{},[2])
+},{"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./StringHelper":23}]},{},[2])
 (2)
 });
