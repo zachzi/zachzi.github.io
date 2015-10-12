@@ -742,7 +742,7 @@ var FilesV2Helper = function () {
                 if (++totalResponses === numItems) {
                     if (successObjects.length) {
                         Logging.log(StringHelper.format('GET metadata succeeded for \'{0}\' items', successObjects.length));
-                        success({ files: successObjects });
+                        success(successObjects);
                     }
                     if (errorObjects.length) {
                         Logging.log(StringHelper.format('GET metadata failed for \'{0}\' items', successObjects.length));
@@ -807,7 +807,7 @@ var ObjectHelper = function () {
     }();
 module.exports = ObjectHelper;
 },{"./Logging":17}],19:[function(_dereq_,module,exports){
-var AccountChooserHelper = _dereq_('./AccountChooserHelper'), ErrorHelper = _dereq_('./ErrorHelper'), FilesV2Helper = _dereq_('./FilesV2Helper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), VroomHelper = _dereq_('./VroomHelper');
+var AccountChooserHelper = _dereq_('./AccountChooserHelper'), ErrorHelper = _dereq_('./ErrorHelper'), FilesV2Helper = _dereq_('./FilesV2Helper'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), VroomHelper = _dereq_('./VroomHelper');
 var VROOM_THUMBNAIL_SIZES = [
         'large',
         'medium',
@@ -857,21 +857,20 @@ var PickerHelper = function () {
             if (errorResponse.error === 'access_denied') {
                 this._pickerOptions.cancel();
             } else {
-                this._pickerOptions.error(errorResponse);
+                this._pickerOptions.error({
+                    errorCode: 10,
+                    message: 'something went wrong: ' + errorResponse.error
+                });
             }
         };
         PickerHelper.prototype._handleMSAOpenResponse = function (pickerResponse) {
             var _this = this;
             var options = this._pickerOptions;
             VroomHelper.callVroomOpen(pickerResponse, options.getWebLinks, function (apiResponse) {
-                var response = {
-                        webUrl: apiResponse.webUrl,
-                        files: options.getWebLinks ? apiResponse.children && apiResponse.children.length > 0 ? apiResponse.children : [apiResponse] : apiResponse.value
-                    };
-                if (!response.files) {
-                    Logging.log('no files');
-                }
-                _this._handleSuccessResponse(response);
+                _this._handleSuccessResponse({
+                    webUrl: apiResponse.webUrl,
+                    files: options.getWebLinks ? apiResponse.children && apiResponse.children.length > 0 ? apiResponse.children : [apiResponse] : apiResponse.value
+                });
             }, function (apiError) {
                 options.error({
                     errorCode: -1,
@@ -882,15 +881,18 @@ var PickerHelper = function () {
         PickerHelper.prototype._handleAADOpenResponse = function (pickerResponse) {
             var _this = this;
             var options = this._pickerOptions;
+            if (options.getWebLinks) {
+                options.error({
+                    errorCode: -1,
+                    message: 'web link not supported for AAD'
+                });
+                return;
+            }
             FilesV2Helper.callFilesV2Open(pickerResponse, function (apiResponse) {
-                if (options.getWebLinks) {
-                    options.error({
-                        errorCode: -1,
-                        message: 'web link not supported for AAD'
-                    });
-                    return;
-                }
-                _this._handleSuccessResponse(apiResponse);
+                _this._handleSuccessResponse({
+                    webUrl: null,
+                    files: apiResponse
+                });
             }, function (apiError) {
                 options.error({
                     errorCode: -1,
@@ -905,6 +907,12 @@ var PickerHelper = function () {
                     values: []
                 };
             var pickerFiles = response.files;
+            if (!pickerFiles) {
+                options.error({
+                    errorCode: -4,
+                    message: 'no files returned'
+                });
+            }
             for (var i = 0; i < pickerFiles.length; i++) {
                 var file = pickerFiles[i];
                 var thumbnails = [];
@@ -928,7 +936,7 @@ var PickerHelper = function () {
         return PickerHelper;
     }();
 module.exports = PickerHelper;
-},{"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./ErrorHelper":15,"./FilesV2Helper":16,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./VroomHelper":26}],20:[function(_dereq_,module,exports){
+},{"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./ErrorHelper":15,"./FilesV2Helper":16,"./ObjectHelper":18,"./RedirectHelper":20,"./VroomHelper":26}],20:[function(_dereq_,module,exports){
 var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
 var AAD_LOGIN_URL = 'https://login.microsoftonline.com/common/oauth2/authorize';
 var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
@@ -1198,7 +1206,7 @@ var ResponseHelper = function () {
     }();
 module.exports = ResponseHelper;
 },{"../Constants":1,"../models/ApiEndpoint":7,"./ErrorHelper":15,"./Logging":17}],22:[function(_dereq_,module,exports){
-var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
+var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
 var POLLING_INTERVAL = 1000;
 var POLLING_COUNTER = 5;
 var SaverHelper = function () {
@@ -1237,9 +1245,13 @@ var SaverHelper = function () {
             switch (pickerType) {
             case 'msa_picker':
                 VroomHelper.callVroomSave(saverResponse, function (apiResponse) {
-                    var folderId = apiResponse.value && apiResponse.value[0] && apiResponse.value[0].id;
-                    if (!folderId || apiResponse.value.length !== 1) {
-                        Logging.log('incorrect number of folders returned');
+                    var apiResponseValue = apiResponse.value;
+                    if (!apiResponseValue) {
+                        ErrorHelper.throwError('empty API response');
+                    }
+                    var folderId = apiResponseValue[0].id;
+                    if (!folderId || apiResponseValue.length !== 1) {
+                        ErrorHelper.throwError('incorrect number of folders returned');
                     }
                     _this._executeUpload(saverResponse, folderId);
                 }, function (apiError) {
@@ -1249,7 +1261,7 @@ var SaverHelper = function () {
             case 'aad_picker':
                 var folderIds = saverResponse.itemIds;
                 if (folderIds.length !== 1) {
-                    Logging.log('incorrect number of folders');
+                    ErrorHelper.throwError('incorrect number of folders returned');
                 }
                 var folderId = folderIds[0];
                 if (!folderId) {
@@ -1265,7 +1277,10 @@ var SaverHelper = function () {
             if (errorResponse.error === 'access_denied') {
                 this._saverOptions.cancel();
             } else {
-                this._saverOptions.error(errorResponse);
+                this._saverOptions.error({
+                    errorCode: 10,
+                    message: 'something went wrong: ' + errorResponse.error
+                });
             }
         };
         SaverHelper.prototype._executeUpload = function (saverResponse, folderId) {
@@ -1286,7 +1301,7 @@ var SaverHelper = function () {
         SaverHelper.prototype._executeUrlUpload = function (saverResponse, folderId, accessToken, uploadType) {
             var _this = this;
             var options = this._saverOptions;
-            if (saverResponse.pickerType === 'aad_picker') {
+            if (uploadType === UploadType.url && saverResponse.pickerType === 'aad_picker') {
                 options.error({
                     errorCode: -33,
                     message: 'URL upload not supported for AAD'
@@ -1342,7 +1357,7 @@ var SaverHelper = function () {
             if (window['File'] && uploadSource instanceof window['File']) {
                 reader = new FileReader();
             } else {
-                Logging.log('file reader not supported');
+                ErrorHelper.throwError('file reader not supported');
             }
             reader.onerror = function (event) {
                 options.error({
@@ -1420,7 +1435,7 @@ var SaverHelper = function () {
         return SaverHelper;
     }();
 module.exports = SaverHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./UrlHelper":25,"./VroomHelper":26}],23:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./ErrorHelper":15,"./ObjectHelper":18,"./RedirectHelper":20,"./UrlHelper":25,"./VroomHelper":26}],23:[function(_dereq_,module,exports){
 var FORMAT_ARGS_REGEX = /[\{\}]/g;
 var FORMAT_REGEX = /\{\d+\}/g;
 var StringHelper = function () {
