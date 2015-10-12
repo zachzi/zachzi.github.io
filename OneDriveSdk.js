@@ -1286,7 +1286,7 @@ var SaverHelper = function () {
         SaverHelper.prototype._executeUrlUpload = function (saverResponse, folderId, accessToken, uploadType) {
             var _this = this;
             var options = this._saverOptions;
-            if (uploadType === UploadType.url && saverResponse.pickerType === 'aad_picker') {
+            if (saverResponse.pickerType === 'aad_picker') {
                 options.error({
                     errorCode: -33,
                     message: 'URL upload not supported for AAD'
