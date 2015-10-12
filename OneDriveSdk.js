@@ -1293,7 +1293,7 @@ var SaverHelper = function () {
                 });
                 return;
             }
-            var uploadUrl = UrlHelper.appendToPath(saverResponse.apiEndpointUrl, 'drives/' + saverResponse.ownerCid + '/items/' + folderId + '/children');
+            var uploadUrl = UrlHelper.appendToPath(saverResponse.apiEndpointUrl, 'drive/items/' + folderId + '/children');
             var requestHeaders = {};
             requestHeaders['Prefer'] = 'respond-async';
             requestHeaders['Authorization'] = 'bearer ' + accessToken;
