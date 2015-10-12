@@ -418,7 +418,7 @@ var PickerOptions = function (_super) {
                 CallbackHelper.invokeAppCallback(successCallback, true, files);
             };
             this.multiSelect = TypeValidationHelper.validateType(options.multiSelect, 'boolean', true, false);
-            this.linkType = TypeValidationHelper.validateType(options.linkType, 'string', true, Constants.LINKTYPE_WEB, VALID_LINKTYPE_VALUES);
+            this.linkType = TypeValidationHelper.validateType(options.linkType, 'string', true, Constants.LINKTYPE_DOWNLOAD, VALID_LINKTYPE_VALUES);
             this.getWebLinks = this.linkType === Constants.LINKTYPE_WEB;
         }
         PickerOptions.prototype.serializeToWindowName = function () {
@@ -1084,14 +1084,16 @@ var RedirectHelper = function () {
                     'opacity: 1',
                     'z-index: 10000'
                 ];
+            overlay.id = 'od-overlay';
             overlay.style.cssText = overlayStyle.join(';');
             var spinner = document.createElement('img');
-            spinner.src = 'https://p.sfx.ms/common/spinner_grey_40_transparent.gif';
             var spinnerStyle = [
                     'position: absolute',
                     'top: calc(50% - 40px)',
                     'left: calc(50% - 40px)'
                 ];
+            spinner.id = 'od-spinner';
+            spinner.src = 'https://p.sfx.ms/common/spinner_grey_40_transparent.gif';
             spinner.style.cssText = spinnerStyle.join(';');
             overlay.appendChild(spinner);
             var hiddenStyle = document.createElement('style');
@@ -1284,7 +1286,7 @@ var SaverHelper = function () {
         SaverHelper.prototype._executeUrlUpload = function (saverResponse, folderId, accessToken, uploadType) {
             var _this = this;
             var options = this._saverOptions;
-            if (saverResponse.pickerType === 'aad_picker') {
+            if (uploadType === UploadType.url && saverResponse.pickerType === 'aad_picker') {
                 options.error({
                     errorCode: -33,
                     message: 'URL upload not supported for AAD'
