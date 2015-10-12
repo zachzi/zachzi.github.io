@@ -4,6 +4,7 @@ var Constants = function () {
         }
         Constants.HTTP_GET = 'GET';
         Constants.HTTP_POST = 'POST';
+        Constants.HTTP_PUT = 'PUT';
         Constants.LINKTYPE_WEB = 'webLink';
         Constants.LINKTYPE_DOWNLOAD = 'downloadLink';
         Constants.SCHEME_HTTP = 'http:';
@@ -33,14 +34,12 @@ var OneDrive = function () {
 OneDriveApp.onloadInit();
 module.exports = OneDrive;
 },{"./Constants":1,"./OneDriveApp":3}],3:[function(_dereq_,module,exports){
-var DomHelper = _dereq_('./utilities/DomHelper'), ErrorHelper = _dereq_('./utilities/ErrorHelper'), Logging = _dereq_('./utilities/Logging'), OneDriveState = _dereq_('./OneDriveState'), PickerHelper = _dereq_('./utilities/PickerHelper'), PickerOptions = _dereq_('./models/PickerOptions'), RedirectHelper = _dereq_('./utilities/RedirectHelper'), ResponseHelper = _dereq_('./utilities/ResponseHelper'), SaverHelper = _dereq_('./utilities/SaverHelper'), SaverOptions = _dereq_('./models/SaverOptions');
+var DomHelper = _dereq_('./utilities/DomHelper'), ErrorHelper = _dereq_('./utilities/ErrorHelper'), Logging = _dereq_('./utilities/Logging'), OneDriveState = _dereq_('./OneDriveState'), PickerHelper = _dereq_('./utilities/PickerHelper'), RedirectHelper = _dereq_('./utilities/RedirectHelper'), ResponseHelper = _dereq_('./utilities/ResponseHelper'), SaverHelper = _dereq_('./utilities/SaverHelper');
 var OneDriveApp = function () {
         function OneDriveApp() {
         }
         OneDriveApp.onloadInit = function () {
-            ErrorHelper.registerErrorObserver(function () {
-                OneDriveState.clearState();
-            });
+            ErrorHelper.registerErrorObserver(OneDriveState.clearState);
             DomHelper.getScriptInput();
             Logging.log('initialized');
             var redirectResponse = RedirectHelper.handleRedirect();
@@ -48,31 +47,26 @@ var OneDriveApp = function () {
                 return;
             }
             var pickerResponse = ResponseHelper.parsePickerResponse(redirectResponse);
-            if (pickerResponse) {
-                var options = redirectResponse.state.options;
-                var mode = options.mode;
-                switch (mode) {
-                case 'open':
-                    var pickerOptions = new PickerOptions(options);
-                    if (pickerResponse.error) {
-                        PickerHelper.handlePickerError(pickerResponse, pickerOptions);
-                    } else {
-                        PickerHelper.handlePickerSuccess(pickerResponse, pickerOptions);
-                    }
-                    break;
-                case 'save':
-                    var saverOptions = new SaverOptions(options);
-                    if (pickerResponse.error) {
-                        SaverHelper.handleSaverError(pickerResponse, saverOptions);
-                    } else {
-                        SaverHelper.handleSaverSuccess(pickerResponse, saverOptions);
-                    }
-                    break;
-                default:
-                    ErrorHelper.throwError('invalid value for options.mode: ' + mode);
+            var options = redirectResponse.windowState.options;
+            switch (options.mode) {
+            case 'open':
+                var pickerHelper = new PickerHelper(options);
+                if (pickerResponse.error) {
+                    pickerHelper.handlePickerError(pickerResponse);
+                } else {
+                    pickerHelper.handlePickerSuccess(pickerResponse);
                 }
-            } else {
-                Logging.log('couldn\'t parse response');
+                break;
+            case 'save':
+                var saverHelper = new SaverHelper(options);
+                if (pickerResponse.error) {
+                    saverHelper.handleSaverError(pickerResponse);
+                } else {
+                    saverHelper.handleSaverSuccess(pickerResponse);
+                }
+                break;
+            default:
+                ErrorHelper.throwError('invalid value for options.mode: ' + options.mode);
             }
         };
         OneDriveApp.open = function (options) {
@@ -83,7 +77,8 @@ var OneDriveApp = function () {
                 ErrorHelper.throwError('missing picker options');
             }
             Logging.log('open started');
-            PickerHelper.run(options);
+            var pickerHelper = new PickerHelper(options);
+            pickerHelper.launchPicker();
         };
         OneDriveApp.save = function (options) {
             if (!OneDriveState.readyCheck()) {
@@ -93,12 +88,13 @@ var OneDriveApp = function () {
                 ErrorHelper.throwError('missing saver options');
             }
             Logging.log('save started');
-            SaverHelper.run(options);
+            var saverHelper = new SaverHelper(options);
+            saverHelper.launchSaver();
         };
         return OneDriveApp;
     }();
 module.exports = OneDriveApp;
-},{"./OneDriveState":4,"./models/PickerOptions":9,"./models/SaverOptions":10,"./utilities/DomHelper":14,"./utilities/ErrorHelper":15,"./utilities/Logging":17,"./utilities/PickerHelper":19,"./utilities/RedirectHelper":20,"./utilities/ResponseHelper":21,"./utilities/SaverHelper":22}],4:[function(_dereq_,module,exports){
+},{"./OneDriveState":4,"./utilities/DomHelper":14,"./utilities/ErrorHelper":15,"./utilities/Logging":17,"./utilities/PickerHelper":19,"./utilities/RedirectHelper":20,"./utilities/ResponseHelper":21,"./utilities/SaverHelper":22}],4:[function(_dereq_,module,exports){
 var OneDriveState = function () {
         function OneDriveState() {
         }
@@ -127,7 +123,7 @@ var Popup = function () {
             this._name = name;
             this._url = url;
             this._successCallback = successCallback;
-            this._errorCallback = errorCallabck;
+            this._failureCallback = errorCallabck;
             Popup._createMessageReceiver();
         }
         Popup.canReceiveMessage = function (event) {
@@ -147,7 +143,7 @@ var Popup = function () {
                         if (response.error === undefined) {
                             CallbackHelper.invokeCallbackAsynchronous(currentPopup._successCallback, response);
                         } else {
-                            CallbackHelper.invokeCallbackAsynchronous(currentPopup._errorCallback, response);
+                            CallbackHelper.invokeCallbackAsynchronous(currentPopup._failureCallback, response);
                         }
                     }
                 });
@@ -190,7 +186,7 @@ var Popup = function () {
                         Popup._currentPopup = null;
                         if (!_this._messageCallbackInvoked) {
                             Logging.log('closed callback');
-                            _this._errorCallback({ 'error': 'access_denied' });
+                            _this._failureCallback({ error: 'access_denied' });
                         }
                     }
                 }, POPUP_PINGER_INTERVAL);
@@ -203,10 +199,11 @@ var Popup = function () {
     }();
 module.exports = Popup;
 },{"./utilities/CallbackHelper":13,"./utilities/Logging":17,"./utilities/ResponseHelper":21}],6:[function(_dereq_,module,exports){
-var ApiEndpoint = _dereq_('./models/ApiEndpoint'), Constants = _dereq_('./Constants'), Logging = _dereq_('./utilities/Logging'), ObjectHelper = _dereq_('./utilities/ObjectHelper'), StringHelper = _dereq_('./utilities/StringHelper');
+var ApiEndpoint = _dereq_('./models/ApiEndpoint'), Constants = _dereq_('./Constants'), ErrorHelper = _dereq_('./utilities/ErrorHelper'), Logging = _dereq_('./utilities/Logging'), ObjectHelper = _dereq_('./utilities/ObjectHelper'), StringHelper = _dereq_('./utilities/StringHelper');
 var DEFAULT_TIMEOUT_MS = 30000;
 var EXCEPTION_STATUS = -1;
 var TIMEOUT_STATUS = -2;
+var ABORT_STATUS = -3;
 var XHR = function () {
         function XHR(options) {
             this._url = options.url;
@@ -216,13 +213,15 @@ var XHR = function () {
             this._method = options.method;
             this._clientId = options.clientId;
             this._apiEndpoint = options.apiEndpoint || ApiEndpoint.other;
+            ErrorHelper.registerErrorObserver(this._abortRequest);
         }
         XHR.prototype.start = function (successCallback, failureCallback) {
             var _this = this;
             try {
                 this._successCallback = successCallback;
                 this._failureCallback = failureCallback;
-                this._createXHR();
+                this._request = new XMLHttpRequest();
+                this._request.ontimeout = this._onTimeout;
                 this._request.onreadystatechange = function () {
                     if (!_this._completed && _this._request.readyState === 4) {
                         _this._completed = true;
@@ -237,10 +236,8 @@ var XHR = function () {
                 if (!this._method) {
                     this._method = this._json ? Constants.HTTP_POST : Constants.HTTP_GET;
                 }
-                this._openXHR();
-                for (var x in this._headers) {
-                    this._request.setRequestHeader(x, this._headers[x]);
-                }
+                this._request.open(this._method, this._url, true);
+                this._setHeaders();
                 this._request.timeout = this._requestTimeoutInMS;
                 this._request.send(this._json);
             } catch (error) {
@@ -254,27 +251,29 @@ var XHR = function () {
                 this._successCallback = successCallback;
                 this._progressCallback = progressCallback;
                 this._failureCallback = failureCallback;
-                this._createXHR();
+                this._request = new XMLHttpRequest();
+                this._request.ontimeout = this._onTimeout;
                 if (!this._method) {
-                    this._method = Constants.HTTP_POST;
+                    this._method = Constants.HTTP_PUT;
                 }
-                if (this._method !== Constants.HTTP_POST) {
-                    Logging.log('must be post');
+                if (this._method !== Constants.HTTP_PUT) {
+                    Logging.log('must be put');
                 }
-                this._openXHR();
+                this._request.open(this._method, this._url, true);
+                this._setHeaders();
                 this._request.onload = function (event) {
-                    var responseText = event.currentTarget.responseText;
+                    _this._completed = true;
                     var status = _this._request.status;
-                    var uploadResponse = ObjectHelper.deserializeJSON(responseText);
-                    if (uploadResponse.error) {
-                        Logging.log('upload error ' + responseText);
-                        _this._callFailureCallback(status);
-                    } else {
-                        Logging.log('upload success ' + responseText);
+                    if (status === 200 || status === 201) {
+                        Logging.log('upload success ');
                         _this._callSuccessCallback(status);
+                    } else {
+                        Logging.log('upload error ' + ObjectHelper.deserializeJSON(event.currentTarget.responseText));
+                        _this._callFailureCallback(status);
                     }
                 };
                 this._request.onerror = function (event) {
+                    _this._completed = true;
                     Logging.log('upload error ' + event.currentTarget.statusText);
                     _this._callFailureCallback(_this._request.status);
                 };
@@ -321,20 +320,31 @@ var XHR = function () {
                 Logging.log('failure callback error');
             }
         };
-        XHR.prototype._createXHR = function () {
-            var _this = this;
-            this._request = new XMLHttpRequest();
-            this._request.ontimeout = function () {
-                Logging.log('timeout');
-                _this._callFailureCallback(TIMEOUT_STATUS);
-            };
+        XHR.prototype._abortRequest = function () {
+            if (!this._completed) {
+                this._completed = true;
+                if (this._request) {
+                    try {
+                        this._request.abort();
+                    } catch (error) {
+                    }
+                }
+                Logging.log('aborted xhr request');
+                this._callFailureCallback(ABORT_STATUS);
+            }
         };
-        XHR.prototype._openXHR = function () {
-            this._request.open(this._method, this._url, true);
-            this._setDefaultHeaders();
+        XHR.prototype._onTimeout = function () {
+            if (!this._completed) {
+                this._completed = true;
+                Logging.log('xhr request timed out');
+                this._callFailureCallback(TIMEOUT_STATUS);
+            }
         };
-        XHR.prototype._setDefaultHeaders = function () {
-            if (this._clientId) {
+        XHR.prototype._setHeaders = function () {
+            for (var x in this._headers) {
+                this._request.setRequestHeader(x, this._headers[x]);
+            }
+            if (this._clientId && this._apiEndpoint !== ApiEndpoint.other) {
                 this._request.setRequestHeader('Application', this._clientId);
             }
             var sdkVersion = StringHelper.format('{0}={1}', 'SDK-Version', Constants.SDK_VERSION);
@@ -348,7 +358,7 @@ var XHR = function () {
             case ApiEndpoint.other:
                 break;
             default:
-                Logging.log('bad api endpoint');
+                ErrorHelper.throwError('invalid API endpoint: ' + this._apiEndpoint);
             }
             if (this._method === Constants.HTTP_POST) {
                 this._request.setRequestHeader('Content-Type', this._json ? 'application/json' : 'text/plain');
@@ -357,7 +367,7 @@ var XHR = function () {
         return XHR;
     }();
 module.exports = XHR;
-},{"./Constants":1,"./models/ApiEndpoint":7,"./utilities/Logging":17,"./utilities/ObjectHelper":18,"./utilities/StringHelper":23}],7:[function(_dereq_,module,exports){
+},{"./Constants":1,"./models/ApiEndpoint":7,"./utilities/ErrorHelper":15,"./utilities/Logging":17,"./utilities/ObjectHelper":18,"./utilities/StringHelper":23}],7:[function(_dereq_,module,exports){
 var ApiEndpoint;
 (function (ApiEndpoint) {
     ApiEndpoint[ApiEndpoint['filesV2'] = 0] = 'filesV2';
@@ -409,7 +419,21 @@ var PickerOptions = function (_super) {
             };
             this.multiSelect = TypeValidationHelper.validateType(options.multiSelect, 'boolean', true, false);
             this.linkType = TypeValidationHelper.validateType(options.linkType, 'string', true, Constants.LINKTYPE_WEB, VALID_LINKTYPE_VALUES);
+            this.getWebLinks = this.linkType === Constants.LINKTYPE_WEB;
         }
+        PickerOptions.prototype.serializeToWindowName = function () {
+            return {
+                options: {
+                    mode: 'open',
+                    success: this.successName,
+                    cancel: this.cancelName,
+                    error: this.errorName,
+                    linkType: this.linkType,
+                    multiSelect: this.multiSelect,
+                    openInNewWindow: this.openInNewWindow
+                }
+            };
+        };
         return PickerOptions;
     }(InvokerOptions);
 module.exports = PickerOptions;
@@ -438,6 +462,21 @@ var SaverOptions = function (_super) {
             };
             this._setFileInfo(options);
         }
+        SaverOptions.prototype.serializeToWindowName = function () {
+            return {
+                options: {
+                    mode: 'save',
+                    success: this.successName,
+                    progress: this.progressName,
+                    cancel: this.cancelName,
+                    error: this.errorName,
+                    file: this.file,
+                    fileName: this.fileName,
+                    uploadType: this.uploadType,
+                    openInNewWindow: this.openInNewWindow
+                }
+            };
+        };
         SaverOptions.prototype._setFileInfo = function (options) {
             this.file = TypeValidationHelper.validateType(options.file, 'string');
             var fileName = TypeValidationHelper.validateType(options.fileName, 'string', true, null);
@@ -653,17 +692,17 @@ var ErrorHelper = function () {
     }();
 module.exports = ErrorHelper;
 },{"./Logging":17}],16:[function(_dereq_,module,exports){
-var Constants = _dereq_('../Constants'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
+var Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
 var BATCH_SIZE = 10;
 var FilesV2Helper = function () {
         function FilesV2Helper() {
         }
-        FilesV2Helper.callFilesV2Open = function (response, generateSharingLinks, success, error) {
+        FilesV2Helper.callFilesV2Open = function (response, success, error) {
+            var apiEndpointUrl = response.apiEndpointUrl;
+            var apiEndpoint = response.apiEndpoint;
             var accessToken = response.accessToken;
             var clientId = OneDriveState.clientIds.aadClientId;
             var itemIds = response.itemIds;
-            var apiEndpointUrl = response.apiEndpointUrl;
-            var apiEndpoint = response.apiEndpoint;
             var queryParameters = {};
             queryParameters['expand'] = 'thumbnails';
             queryParameters['select'] = 'id,name,size';
@@ -675,32 +714,38 @@ var FilesV2Helper = function () {
             var numItems = itemIds.length;
             var invokeCallbacks;
             var runBatch = function (batchStart, batchEnd) {
+                Logging.log(StringHelper.format('running batch for items \'{0}\' - \'{1}\'', batchStart + 1, batchEnd + 1));
                 for (var i = batchStart; i < batchEnd; i++) {
-                    (function (itemId) {
-                        var url = UrlHelper.appendToPath(apiEndpointUrl, 'drive/items/' + itemId);
-                        var xhr = new XHR({
-                                url: UrlHelper.appendQueryStrings(url, queryParameters),
-                                clientId: clientId,
-                                method: Constants.HTTP_GET,
-                                apiEndpoint: apiEndpoint,
-                                headers: requestHeaders
-                            });
-                        xhr.start(function (xhr, statusCode) {
-                            successObjects.push(ObjectHelper.deserializeJSON(xhr.responseText));
-                            invokeCallbacks();
-                        }, function (xhr, statusCode, timeout) {
-                            errorObjects.push({ error: StringHelper.format('GET on item \'{0}\' failed with status code \'{1}', itemId, statusCode) });
-                            invokeCallbacks();
+                    var itemId = itemIds[i];
+                    var url = UrlHelper.appendToPath(apiEndpointUrl, 'drive/items/' + itemId);
+                    var xhr = new XHR({
+                            url: UrlHelper.appendQueryStrings(url, queryParameters),
+                            clientId: clientId,
+                            method: Constants.HTTP_GET,
+                            apiEndpoint: apiEndpoint,
+                            headers: requestHeaders
                         });
-                    }(itemIds[i]));
+                    Logging.log('performing GET on item with id: ' + itemId);
+                    xhr.start(function (xhr, statusCode) {
+                        successObjects.push(ObjectHelper.deserializeJSON(xhr.responseText));
+                        invokeCallbacks();
+                    }, function (xhr, statusCode, timeout) {
+                        errorObjects.push({
+                            statusCode: statusCode,
+                            response: xhr.responseText
+                        });
+                        invokeCallbacks();
+                    });
                 }
             };
             invokeCallbacks = function () {
                 if (++totalResponses === numItems) {
-                    if (successObjects.length > 0) {
+                    if (successObjects.length) {
+                        Logging.log(StringHelper.format('GET metadata succeeded for \'{0}\' items', successObjects.length));
                         success({ files: successObjects });
                     }
-                    if (errorObjects.length > 0) {
+                    if (errorObjects.length) {
+                        Logging.log(StringHelper.format('GET metadata failed for \'{0}\' items', successObjects.length));
                         error(errorObjects);
                     }
                 } else if (totalResponses % BATCH_SIZE === 0) {
@@ -712,7 +757,7 @@ var FilesV2Helper = function () {
         return FilesV2Helper;
     }();
 module.exports = FilesV2Helper;
-},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./ObjectHelper":18,"./StringHelper":23,"./UrlHelper":25}],17:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./Logging":17,"./ObjectHelper":18,"./StringHelper":23,"./UrlHelper":25}],17:[function(_dereq_,module,exports){
 var LOG_PREFIX = '[OneDriveSDK] ';
 var Logging = function () {
         function Logging() {
@@ -762,79 +807,71 @@ var ObjectHelper = function () {
     }();
 module.exports = ObjectHelper;
 },{"./Logging":17}],19:[function(_dereq_,module,exports){
-var AccountChooserHelper = _dereq_('./AccountChooserHelper'), Constants = _dereq_('../Constants'), FilesV2Helper = _dereq_('./FilesV2Helper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), VroomHelper = _dereq_('./VroomHelper');
+var AccountChooserHelper = _dereq_('./AccountChooserHelper'), ErrorHelper = _dereq_('./ErrorHelper'), FilesV2Helper = _dereq_('./FilesV2Helper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), VroomHelper = _dereq_('./VroomHelper');
 var VROOM_THUMBNAIL_SIZES = [
         'large',
         'medium',
         'small'
     ];
 var PickerHelper = function () {
-        function PickerHelper() {
-        }
-        PickerHelper.run = function (options) {
+        function PickerHelper(options) {
             var clonedOptions = ObjectHelper.shallowClone(options);
-            var pickerOptions = new PickerOptions(clonedOptions);
+            this._pickerOptions = new PickerOptions(clonedOptions);
+        }
+        PickerHelper.prototype.launchPicker = function () {
+            var _this = this;
+            var pickerOptions = this._pickerOptions;
             var url = AccountChooserHelper.buildAccountChooserUrlForPicker(pickerOptions);
-            var windowState = PickerHelper._createWindowName(pickerOptions);
+            var windowState = pickerOptions.serializeToWindowName();
             if (pickerOptions.openInNewWindow) {
                 var popup = new Popup(url, ObjectHelper.serializeJSON(windowState), function (response) {
-                        PickerHelper.handlePickerSuccess(response, pickerOptions);
+                        _this.handlePickerSuccess(response);
                     }, function (response) {
-                        PickerHelper.handlePickerError(response, pickerOptions);
+                        _this.handlePickerError(response);
                     });
                 if (!popup.openPopup()) {
-                    Logging.log('popup error');
+                    pickerOptions.error({
+                        errorCode: 1,
+                        message: 'popup window is already open'
+                    });
+                    return;
                 }
             } else {
                 RedirectHelper.redirect(url, windowState);
             }
         };
-        PickerHelper.handlePickerSuccess = function (pickerResponse, options) {
-            var linkType = options.linkType;
-            var isWebLinkType = linkType === Constants.LINKTYPE_WEB;
+        PickerHelper.prototype.handlePickerSuccess = function (pickerResponse) {
             var pickerType = pickerResponse.pickerType;
             switch (pickerType) {
             case 'msa_picker':
-                PickerHelper._handleMSAOpenResponse(pickerResponse, options, linkType, isWebLinkType);
+                this._handleMSAOpenResponse(pickerResponse);
                 break;
             case 'aad_picker':
-                PickerHelper._handleAADOpenResponse(pickerResponse, options, linkType, isWebLinkType);
+                this._handleAADOpenResponse(pickerResponse);
                 break;
             default:
-                Logging.log('bad state ' + pickerType);
+                ErrorHelper.throwError('invalid value for picker type: ' + pickerType);
             }
         };
-        PickerHelper.handlePickerError = function (errorResponse, options) {
+        PickerHelper.prototype.handlePickerError = function (errorResponse) {
             if (errorResponse.error === 'access_denied') {
-                options.cancel();
+                this._pickerOptions.cancel();
             } else {
-                options.error(errorResponse);
+                this._pickerOptions.error(errorResponse);
             }
         };
-        PickerHelper._handleMSAOpenResponse = function (pickerResponse, options, linkType, isWebLinkType) {
-            VroomHelper.callVroomOpen(pickerResponse, isWebLinkType, function (apiResponse) {
+        PickerHelper.prototype._handleMSAOpenResponse = function (pickerResponse) {
+            var _this = this;
+            var options = this._pickerOptions;
+            VroomHelper.callVroomOpen(pickerResponse, options.getWebLinks, function (apiResponse) {
                 var response = {
                         webUrl: apiResponse.webUrl,
-                        files: isWebLinkType ? apiResponse.children && apiResponse.children.length > 0 ? apiResponse.children : [apiResponse] : apiResponse.value
+                        files: options.getWebLinks ? apiResponse.children && apiResponse.children.length > 0 ? apiResponse.children : [apiResponse] : apiResponse.value
                     };
                 if (!response.files) {
                     Logging.log('no files');
                 }
-                PickerHelper._handleSuccessResponse(response, options, linkType, isWebLinkType);
-            }, function (apiError) {
-                options.error(apiError);
-            });
-        };
-        PickerHelper._handleAADOpenResponse = function (pickerResponse, options, linkType, isWebLinkType) {
-            FilesV2Helper.callFilesV2Open(pickerResponse, isWebLinkType, function (apiResponse) {
-                if (isWebLinkType) {
-                    options.error({
-                        errorCode: -1,
-                        message: 'web link not supported for AAD'
-                    });
-                    return;
-                }
-                PickerHelper._handleSuccessResponse(apiResponse, options, linkType, isWebLinkType);
+                _this._handleSuccessResponse(response);
             }, function (apiError) {
                 options.error({
                     errorCode: -1,
@@ -842,16 +879,36 @@ var PickerHelper = function () {
                 });
             });
         };
-        PickerHelper._handleSuccessResponse = function (response, options, linkType, isWebLinkType) {
+        PickerHelper.prototype._handleAADOpenResponse = function (pickerResponse) {
+            var _this = this;
+            var options = this._pickerOptions;
+            FilesV2Helper.callFilesV2Open(pickerResponse, function (apiResponse) {
+                if (options.getWebLinks) {
+                    options.error({
+                        errorCode: -1,
+                        message: 'web link not supported for AAD'
+                    });
+                    return;
+                }
+                _this._handleSuccessResponse(apiResponse);
+            }, function (apiError) {
+                options.error({
+                    errorCode: -1,
+                    message: 'foo'
+                });
+            });
+        };
+        PickerHelper.prototype._handleSuccessResponse = function (response) {
+            var options = this._pickerOptions;
             var files = {
-                    link: isWebLinkType ? response.webUrl : null,
+                    link: options.getWebLinks ? response.webUrl : null,
                     values: []
                 };
             var pickerFiles = response.files;
             for (var i = 0; i < pickerFiles.length; i++) {
                 var file = pickerFiles[i];
                 var thumbnails = [];
-                var fileLink = isWebLinkType ? file.webUrl : file['@content.downloadUrl'];
+                var fileLink = options.getWebLinks ? file.webUrl : file['@content.downloadUrl'];
                 var fileThumbnails = file.thumbnails && file.thumbnails[0];
                 if (fileThumbnails) {
                     for (var j = 0; j < VROOM_THUMBNAIL_SIZES.length; j++) {
@@ -861,31 +918,18 @@ var PickerHelper = function () {
                 files.values.push({
                     fileName: file.name,
                     link: fileLink,
-                    linkType: linkType,
+                    linkType: options.linkType,
                     size: file.size,
                     thumbnails: thumbnails
                 });
             }
             options.success(files);
         };
-        PickerHelper._createWindowName = function (options) {
-            return {
-                options: {
-                    mode: 'open',
-                    success: options.successName,
-                    cancel: options.cancelName,
-                    error: options.errorName,
-                    linkType: options.linkType,
-                    multiSelect: options.multiSelect,
-                    openInNewWindow: options.openInNewWindow
-                }
-            };
-        };
         return PickerHelper;
     }();
 module.exports = PickerHelper;
-},{"../Constants":1,"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./FilesV2Helper":16,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./VroomHelper":26}],20:[function(_dereq_,module,exports){
-var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
+},{"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./ErrorHelper":15,"./FilesV2Helper":16,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./VroomHelper":26}],20:[function(_dereq_,module,exports){
+var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
 var AAD_LOGIN_URL = 'https://login.microsoftonline.com/common/oauth2/authorize';
 var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
 var RESPONSE_TIMEOUT = 2000;
@@ -893,64 +937,71 @@ var RedirectHelper = function () {
         function RedirectHelper() {
         }
         RedirectHelper.redirect = function (url, values, windowState) {
+            if (values === void 0) {
+                values = null;
+            }
             if (windowState === void 0) {
                 windowState = null;
             }
-            WindowStateHelper.setWindowState(values, windowState);
+            if (values) {
+                WindowStateHelper.setWindowState(values, windowState);
+            }
             window.location.replace(url);
         };
         RedirectHelper.handleRedirect = function () {
             var queryParameters = UrlHelper.readCurrentUrlParameters();
             var serializedState = WindowStateHelper.getWindowState();
-            if (queryParameters['error'] === 'access_denied') {
+            var state = queryParameters['state'] || serializedState['state'];
+            if (!state && queryParameters['error'] === 'access_denied') {
                 queryParameters['state'] = 'msa_picker';
+            } else if (state === 'aad_picker') {
+                queryParameters['state'] = 'aad_picker';
             }
-            var redirectState = queryParameters['state'] || serializedState['state'];
+            var redirectState = queryParameters['state'];
             if (!redirectState) {
-                return;
+                return null;
             }
+            Logging.log('current state: ' + redirectState);
             var options = serializedState['options'];
             if (!options) {
-                Logging.log('missing options');
+                ErrorHelper.throwError('missing options from serialized state');
             }
-            var openInNewWindow = TypeValidationHelper.validateType(options.openInNewWindow, 'boolean');
-            if (openInNewWindow) {
+            var inPopupFlow = TypeValidationHelper.validateType(options.openInNewWindow, 'boolean');
+            if (inPopupFlow) {
                 RedirectHelper._displayOverlay();
             }
             switch (redirectState) {
             case 'discovery':
-                if (!openInNewWindow) {
-                    RedirectHelper._displayOverlay();
-                }
-                RedirectHelper._handleDiscoverRedirect(queryParameters);
+                RedirectHelper._handleDiscoverRedirect(queryParameters, inPopupFlow);
                 break;
             case 'aad_tenant_login':
-                if (!openInNewWindow) {
-                    RedirectHelper._displayOverlay();
-                }
-                RedirectHelper._handleAADTenantLoginRedirect(queryParameters);
+                RedirectHelper._handleAADTenantLoginRedirect(queryParameters, inPopupFlow);
                 break;
             case 'msa_picker':
             case 'aad_picker':
                 var pickerResponse = {
-                        state: serializedState,
+                        windowState: serializedState,
                         queryParameters: queryParameters
                     };
-                if (openInNewWindow) {
+                Logging.log('sending picker response');
+                if (inPopupFlow) {
                     RedirectHelper._sendResponse(pickerResponse);
                 } else {
                     return pickerResponse;
                 }
                 break;
             default:
-                Logging.log('bad state ' + redirectState);
+                ErrorHelper.throwError('invalid value for redirect state: ' + redirectState);
             }
             return null;
         };
-        RedirectHelper._handleDiscoverRedirect = function (queryParameters) {
+        RedirectHelper._handleDiscoverRedirect = function (queryParameters, inPopupFlow) {
+            if (!inPopupFlow) {
+                RedirectHelper._displayOverlay();
+            }
             var accessToken = queryParameters['access_token'];
             if (!accessToken) {
-                Logging.log('missing access token');
+                RedirectHelper._handleError('missing access token', inPopupFlow);
             }
             var xhr = new XHR({
                     url: UrlHelper.appendQueryString(DISCOVERY_URL, 'access_token', accessToken),
@@ -968,56 +1019,58 @@ var RedirectHelper = function () {
                         redirect_uri: UrlHelper.trimUrlQuery(window.location.href),
                         state: 'aad_tenant_login'
                     };
-                var stateValue = [{
-                            key: 'discovery',
-                            value: {
-                                tenantUrl: tenantUrl,
-                                apiEndpoint: apiEndpoint
-                            }
-                        }];
+                var stateValue = {
+                        discovery: {
+                            tenantUrl: tenantUrl,
+                            apiEndpoint: apiEndpoint
+                        }
+                    };
                 RedirectHelper.redirect(UrlHelper.appendQueryStrings(AAD_LOGIN_URL, queryParameters), stateValue);
             }, function (xhr, statusCode, timeout) {
-                RedirectHelper._sendResponse({ error: 'discover request fails ' + statusCode });
+                RedirectHelper._handleError('discover request failed ' + statusCode, inPopupFlow);
             });
         };
-        RedirectHelper._handleAADTenantLoginRedirect = function (queryParameters) {
+        RedirectHelper._handleAADTenantLoginRedirect = function (queryParameters, inPopupFlow) {
+            if (!inPopupFlow) {
+                RedirectHelper._displayOverlay();
+            }
             var accessToken = queryParameters['access_token'];
             if (!accessToken) {
-                Logging.log('missing api access token');
+                RedirectHelper._handleError('missing api access token', inPopupFlow);
             }
-            var stateValues = [
-                    {
-                        key: 'aad_access_token',
-                        value: accessToken
-                    },
-                    {
-                        key: 'state',
-                        value: 'aad_picker'
-                    }
-                ];
+            var stateValues = {
+                    aad_access_token: accessToken,
+                    state: 'aad_picker'
+                };
             var windowState = WindowStateHelper.getWindowState();
             var tenantUrl = windowState.discovery.tenantUrl;
             if (!tenantUrl) {
-                Logging.log('missing tenant url');
+                RedirectHelper._handleError('missing tenant url', inPopupFlow);
             }
             RedirectHelper.redirect(UrlHelper.appendToPath(tenantUrl, 'MySiteRedirect.aspx?MySiteRedirect=AllDocuments#p=2'), stateValues, windowState);
         };
         RedirectHelper._sendResponse = function (response) {
-            var pingTimeout = window.setTimeout(function () {
-                    Logging.log('ping missing');
-                    window.close();
-                }, RESPONSE_TIMEOUT);
+            var pingTimeout = window.setTimeout(window.close, RESPONSE_TIMEOUT);
             window.addEventListener('message', function (event) {
                 if (!Popup.canReceiveMessage(event)) {
                     return;
                 }
                 window.clearTimeout(pingTimeout);
-                Logging.log('sending response back: ' + JSON.stringify(response));
                 event.source.postMessage(response, window.location.origin);
-                CallbackHelper.invokeCallbackAsynchronous(function () {
-                    window.close();
-                });
+                CallbackHelper.invokeCallbackAsynchronous(window.close);
             });
+        };
+        RedirectHelper._handleError = function (error, inPopupFlow) {
+            var errorQueryParametere = {};
+            errorQueryParametere['error'] = error;
+            if (inPopupFlow) {
+                RedirectHelper._sendResponse({ queryParameters: errorQueryParametere });
+            } else {
+                Logging.log('handling error');
+                errorQueryParametere['state'] = 'aad_picker';
+                var redirectUrl = UrlHelper.trimUrlQuery(window.location.href);
+                RedirectHelper.redirect(UrlHelper.appendQueryStrings(redirectUrl, errorQueryParametere));
+            }
         };
         RedirectHelper._displayOverlay = function () {
             var overlay = document.createElement('div');
@@ -1058,7 +1111,7 @@ var RedirectHelper = function () {
         return RedirectHelper;
     }();
 module.exports = RedirectHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./Logging":17,"./ObjectHelper":18,"./TypeValidationHelper":24,"./UrlHelper":25,"./WindowStateHelper":27}],21:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./TypeValidationHelper":24,"./UrlHelper":25,"./WindowStateHelper":27}],21:[function(_dereq_,module,exports){
 var ApiEndpoint = _dereq_('../models/ApiEndpoint'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging');
 var CID_PADDING = '0000000000000000';
 var CID_PADDING_LENGTH = CID_PADDING.length;
@@ -1067,8 +1120,15 @@ var ResponseHelper = function () {
         function ResponseHelper() {
         }
         ResponseHelper.parsePickerResponse = function (response) {
-            var serializedState = response.state;
+            Logging.log('parsing picker response');
+            var serializedState = response.windowState;
+            if (!serializedState) {
+                ErrorHelper.throwError('missing windowState from picker response');
+            }
             var queryParameters = response.queryParameters;
+            if (!queryParameters) {
+                ErrorHelper.throwError('missing queryParameters from picker response');
+            }
             var responseError = queryParameters['error'];
             if (responseError) {
                 return { error: responseError };
@@ -1077,42 +1137,49 @@ var ResponseHelper = function () {
             var result = { pickerType: pickerType };
             switch (pickerType) {
             case 'msa_picker':
-                ResponseHelper._handleMSAResponse(queryParameters, result);
+                result.apiEndpoint = ApiEndpoint.vroom;
+                ResponseHelper._parseMSAResponse(result, queryParameters);
                 break;
             case 'aad_picker':
-                ResponseHelper._handleAADResponse(serializedState, queryParameters, result);
+                result.apiEndpoint = ApiEndpoint.filesV2;
+                ResponseHelper._parseAADResponse(result, queryParameters, serializedState);
                 break;
             default:
                 ErrorHelper.throwError('invalid value for picker type: ' + pickerType);
             }
+            if (!result.accessToken) {
+                ErrorHelper.throwError('missing access token');
+            }
+            if (!result.apiEndpointUrl) {
+                ErrorHelper.throwError('missing API endpoint URL');
+            }
             return result;
         };
-        ResponseHelper._handleMSAResponse = function (queryParameters, result) {
+        ResponseHelper._parseMSAResponse = function (result, queryParameters) {
             result.accessToken = queryParameters['access_token'];
             result.apiEndpointUrl = Constants.VROOM_URL;
-            result.apiEndpoint = ApiEndpoint.vroom;
             var responseScope = queryParameters['scope'];
+            if (!responseScope) {
+                ErrorHelper.throwError('missing \'scope\' paramter from MSA picker response');
+            }
             var scopeResult = MSA_SCOPE_RESPONSE_PATTERN.exec(responseScope);
-            if (scopeResult) {
-                var rawResult = scopeResult[1].split('_');
-                var rawItemId = rawResult[1];
-                var splitIndex = rawItemId.indexOf('!');
-                var rawItemIdPart1 = rawItemId.substring(0, splitIndex);
-                var rawItemIdPart2 = rawItemId.substring(splitIndex);
-                var ownerCid = ResponseHelper._leftPadCid(rawItemIdPart1);
-                var itemId = ownerCid + rawItemIdPart2;
-                result.ownerCid = ownerCid;
-                result.itemId = itemId;
-                result.authKey = result[2];
-                Logging.log('parsed MSA response for item: ' + itemId);
-            } else {
+            if (!scopeResult) {
                 ErrorHelper.throwError('scope was not formatted correctly');
             }
+            var rawResult = scopeResult[1].split('_');
+            var rawItemId = rawResult[1];
+            var splitIndex = rawItemId.indexOf('!');
+            var rawItemIdPart1 = rawItemId.substring(0, splitIndex);
+            var rawItemIdPart2 = rawItemId.substring(splitIndex);
+            var ownerCid = ResponseHelper._leftPadCid(rawItemIdPart1);
+            var itemId = ownerCid + rawItemIdPart2;
+            result.ownerCid = ownerCid;
+            result.itemId = itemId;
+            result.authKey = result[2];
         };
-        ResponseHelper._handleAADResponse = function (state, queryParameters, result) {
+        ResponseHelper._parseAADResponse = function (result, queryParameters, state) {
             result.accessToken = state.aad_access_token;
-            result.apiEndpointUrl = state.discovery.apiEndpoint;
-            result.apiEndpoint = ApiEndpoint.filesV2;
+            result.apiEndpointUrl = state.discovery && state.discovery.apiEndpoint;
             var itemIds = queryParameters['item-id'].split(',');
             if (!itemIds.length) {
                 ErrorHelper.throwError('missing item id(s)');
@@ -1120,40 +1187,50 @@ var ResponseHelper = function () {
             result.itemIds = itemIds;
         };
         ResponseHelper._leftPadCid = function (cid) {
+            if (cid.length === CID_PADDING_LENGTH) {
+                return cid;
+            }
             return CID_PADDING.substring(0, CID_PADDING_LENGTH - cid.length) + cid;
         };
         return ResponseHelper;
     }();
 module.exports = ResponseHelper;
 },{"../Constants":1,"../models/ApiEndpoint":7,"./ErrorHelper":15,"./Logging":17}],22:[function(_dereq_,module,exports){
-var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
+var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
 var POLLING_INTERVAL = 1000;
 var POLLING_COUNTER = 5;
 var SaverHelper = function () {
-        function SaverHelper() {
-        }
-        SaverHelper.run = function (options) {
+        function SaverHelper(options) {
             var clonedOptions = ObjectHelper.shallowClone(options);
-            var saverOptions = new SaverOptions(clonedOptions);
+            this._saverOptions = new SaverOptions(clonedOptions);
+        }
+        SaverHelper.prototype.launchSaver = function () {
+            var _this = this;
+            var saverOptions = this._saverOptions;
             if (saverOptions.invalidFile) {
                 return;
             }
             var url = AccountChooserHelper.buildAccountChooserUrlForSaver();
-            var windowState = SaverHelper._createWindowName(saverOptions);
+            var windowState = saverOptions.serializeToWindowName();
             if (saverOptions.openInNewWindow) {
                 var popup = new Popup(url, ObjectHelper.serializeJSON(windowState), function (response) {
-                        SaverHelper.handleSaverSuccess(response, saverOptions);
+                        _this.handleSaverSuccess(response);
                     }, function (response) {
-                        SaverHelper.handleSaverError(response, saverOptions);
+                        _this.handleSaverError(response);
                     });
                 if (!popup.openPopup()) {
-                    Logging.log('popup error');
+                    saverOptions.error({
+                        errorCode: 1,
+                        message: 'popup window is already open'
+                    });
+                    return;
                 }
             } else {
                 RedirectHelper.redirect(url, windowState);
             }
         };
-        SaverHelper.handleSaverSuccess = function (saverResponse, options) {
+        SaverHelper.prototype.handleSaverSuccess = function (saverResponse) {
+            var _this = this;
             var pickerType = saverResponse.pickerType;
             switch (pickerType) {
             case 'msa_picker':
@@ -1162,9 +1239,9 @@ var SaverHelper = function () {
                     if (!folderId || apiResponse.value.length !== 1) {
                         Logging.log('incorrect number of folders returned');
                     }
-                    SaverHelper._executeUpload(saverResponse, options, folderId);
+                    _this._executeUpload(saverResponse, folderId);
                 }, function (apiError) {
-                    options.error(apiError);
+                    _this._saverOptions.error(apiError);
                 });
                 break;
             case 'aad_picker':
@@ -1176,35 +1253,44 @@ var SaverHelper = function () {
                 if (!folderId) {
                     folderId = 'root';
                 }
-                SaverHelper._executeUpload(saverResponse, options, folderId);
+                this._executeUpload(saverResponse, folderId);
                 break;
             default:
-                Logging.log('bad state ' + pickerType);
+                ErrorHelper.throwError('invalid value for picker type: ' + pickerType);
             }
         };
-        SaverHelper.handleSaverError = function (errorResponse, options) {
+        SaverHelper.prototype.handleSaverError = function (errorResponse) {
             if (errorResponse.error === 'access_denied') {
-                options.cancel();
+                this._saverOptions.cancel();
             } else {
-                options.error(errorResponse);
+                this._saverOptions.error(errorResponse);
             }
         };
-        SaverHelper._executeUpload = function (saverResponse, options, folderId) {
+        SaverHelper.prototype._executeUpload = function (saverResponse, folderId) {
             var accessToken = saverResponse.accessToken;
-            var uploadType = options.uploadType;
+            var uploadType = this._saverOptions.uploadType;
             switch (uploadType) {
             case UploadType.dataUrl:
             case UploadType.url:
-                SaverHelper._executeUrlUpload(saverResponse, options, folderId, accessToken, uploadType);
+                this._executeUrlUpload(saverResponse, folderId, accessToken, uploadType);
                 break;
             case UploadType.form:
-                SaverHelper._executeFormUpload(saverResponse, options, folderId, accessToken);
+                this._executeFormUpload(saverResponse, folderId, accessToken);
                 break;
             default:
-                Logging.log('bad upload type');
+                ErrorHelper.throwError('invalid value for upload type: ' + uploadType);
             }
         };
-        SaverHelper._executeUrlUpload = function (saverResponse, options, folderId, accessToken, uploadType) {
+        SaverHelper.prototype._executeUrlUpload = function (saverResponse, folderId, accessToken, uploadType) {
+            var _this = this;
+            var options = this._saverOptions;
+            if (saverResponse.pickerType === 'aad_picker') {
+                options.error({
+                    errorCode: -33,
+                    message: 'URL upload not supported for AAD'
+                });
+                return;
+            }
             var uploadUrl = UrlHelper.appendToPath(saverResponse.apiEndpointUrl, 'drives/' + saverResponse.ownerCid + '/items/' + folderId + '/children');
             var requestHeaders = {};
             requestHeaders['Prefer'] = 'respond-async';
@@ -1233,7 +1319,7 @@ var SaverHelper = function () {
                             message: 'foo'
                         });
                     }
-                    SaverHelper._beginPolling(options, location_1, accessToken);
+                    _this._beginPolling(location_1, accessToken);
                 } else {
                     options.error({
                         errorCode: -1,
@@ -1247,7 +1333,8 @@ var SaverHelper = function () {
                 });
             });
         };
-        SaverHelper._executeFormUpload = function (saverResponse, options, folderId, accessToken) {
+        SaverHelper.prototype._executeFormUpload = function (saverResponse, folderId, accessToken) {
+            var options = this._saverOptions;
             var uploadSource = options.fileInput;
             var reader = null;
             if (window['File'] && uploadSource instanceof window['File']) {
@@ -1264,12 +1351,14 @@ var SaverHelper = function () {
             reader.onload = function (event) {
                 var uploadUrl = UrlHelper.appendToPath(saverResponse.apiEndpointUrl, 'drive/items/' + folderId + '/children/' + options.fileName + '/content');
                 var queryParameters = {};
-                queryParameters['access_token'] = accessToken;
-                queryParameters['@name.conflictBehavior'] = 'rename';
+                queryParameters['@name.conflictBehavior'] = saverResponse.pickerType === 'aad_picker' ? 'fail' : 'rename';
+                var requestHeaders = {};
+                requestHeaders['Authorization'] = 'bearer ' + accessToken;
                 var xhr = new XHR({
                         url: UrlHelper.appendQueryStrings(uploadUrl, queryParameters),
                         clientId: OneDriveState.clientIds.msaClientId,
-                        method: Constants.HTTP_POST,
+                        method: Constants.HTTP_PUT,
+                        headers: requestHeaders,
                         apiEndpoint: saverResponse.apiEndpoint
                     });
                 var data = event.target.result;
@@ -1286,13 +1375,14 @@ var SaverHelper = function () {
             };
             reader.readAsArrayBuffer(uploadSource);
         };
-        SaverHelper._beginPolling = function (options, location, accessToken) {
+        SaverHelper.prototype._beginPolling = function (location, accessToken) {
             var pollingInterval = POLLING_INTERVAL;
             var pollCount = POLLING_COUNTER;
             var xhrOptions = {
                     url: UrlHelper.appendQueryString(location, 'access_token', accessToken),
                     method: Constants.HTTP_GET
                 };
+            var options = this._saverOptions;
             var pollForProgress = function () {
                 var xhr = new XHR(xhrOptions);
                 xhr.start(function (xhr, statusCode) {
@@ -1325,25 +1415,10 @@ var SaverHelper = function () {
             };
             CallbackHelper.invokeCallbackAsynchronous(pollForProgress, pollingInterval);
         };
-        SaverHelper._createWindowName = function (options) {
-            return {
-                options: {
-                    mode: 'save',
-                    success: options.successName,
-                    progress: options.progressName,
-                    cancel: options.cancelName,
-                    error: options.errorName,
-                    file: options.file,
-                    fileName: options.fileName,
-                    uploadType: options.uploadType,
-                    openInNewWindow: options.openInNewWindow
-                }
-            };
-        };
         return SaverHelper;
     }();
 module.exports = SaverHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./UrlHelper":25,"./VroomHelper":26}],23:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./RedirectHelper":20,"./UrlHelper":25,"./VroomHelper":26}],23:[function(_dereq_,module,exports){
 var FORMAT_ARGS_REGEX = /[\{\}]/g;
 var FORMAT_REGEX = /\{\d+\}/g;
 var StringHelper = function () {
@@ -1362,12 +1437,6 @@ var StringHelper = function () {
                 return replacement;
             };
             return str.replace(FORMAT_REGEX, replacer);
-        };
-        StringHelper.equalsCaseInsensitive = function (a, b) {
-            if (a && b) {
-                return a.toLowerCase() === b.toLowerCase();
-            }
-            return a === b;
         };
         return StringHelper;
     }();
@@ -1456,6 +1525,10 @@ var UrlHelper = function () {
         UrlHelper.appendToPath = function (baseUrl, path) {
             return baseUrl + (baseUrl.charAt(baseUrl.length - 1) !== '/' ? '/' : '') + path;
         };
+        UrlHelper.appendQueryString = function (baseUrl, queryKey, queryValue) {
+            return UrlHelper.appendQueryStrings(baseUrl, (_a = {}, _a[queryKey] = queryValue, _a));
+            var _a;
+        };
         UrlHelper.appendQueryStrings = function (baseUrl, queryParameters) {
             if (!queryParameters || Object.keys(queryParameters).length === 0) {
                 return baseUrl;
@@ -1470,10 +1543,6 @@ var UrlHelper = function () {
                 queryString += (queryString.length ? '&' : '') + StringHelper.format('{0}={1}', encodeURIComponent(key), encodeURIComponent(queryParameters[key]));
             }
             return baseUrl + queryString;
-        };
-        UrlHelper.appendQueryString = function (baseUrl, queryKey, queryValue) {
-            return UrlHelper.appendQueryStrings(baseUrl, (_a = {}, _a[queryKey] = queryValue, _a));
-            var _a;
         };
         UrlHelper.readCurrentUrlParameters = function () {
             return UrlHelper.readUrlParameters(window.location.href);
@@ -1527,35 +1596,36 @@ var UrlHelper = function () {
     }();
 module.exports = UrlHelper;
 },{"./StringHelper":23}],26:[function(_dereq_,module,exports){
-var Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
+var Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
 var VroomHelper = function () {
         function VroomHelper() {
         }
-        VroomHelper.callVroomOpen = function (response, generateSharingLinks, success, error) {
-            VroomHelper._callVroom(response, generateSharingLinks, false, success, error);
+        VroomHelper.callVroomOpen = function (response, getWebLinks, success, error) {
+            VroomHelper._callVroom(response, getWebLinks, false, success, error);
         };
         VroomHelper.callVroomSave = function (response, success, error) {
             VroomHelper._callVroom(response, false, true, success, error);
         };
-        VroomHelper._callVroom = function (response, generateSharingLinks, isSaver, success, error) {
+        VroomHelper._callVroom = function (response, getWebLinks, isSaver, success, error) {
+            var apiEndpointUrl = response.apiEndpointUrl;
+            var apiEndpoint = response.apiEndpoint;
             var accessToken = response.accessToken;
             var ownerCid = response.ownerCid;
             var itemId = response.itemId;
             var authKey = response.authKey;
-            if (!authKey && generateSharingLinks) {
-                Logging.log('missing auth key');
+            if (!authKey && getWebLinks) {
+                ErrorHelper.throwError('missing auth key');
             }
-            var vroomUrl = Constants.VROOM_URL;
             var queryParameters;
-            if (generateSharingLinks) {
-                vroomUrl += 'drives/' + ownerCid + '/items/' + itemId;
+            if (getWebLinks) {
+                apiEndpointUrl = UrlHelper.appendToPath(apiEndpointUrl, 'drives/' + ownerCid + '/items/' + itemId);
                 queryParameters = {
                     authKey: authKey,
                     expand: 'thumbnails,children(select=id,webUrl,name,size;expand=thumbnails)',
                     select: 'id,webUrl,name,size'
                 };
             } else {
-                vroomUrl += 'drive/items/' + itemId + '/children';
+                apiEndpointUrl = UrlHelper.appendToPath(apiEndpointUrl, 'drive/items/' + itemId + '/children');
                 queryParameters = { access_token: accessToken };
                 if (isSaver) {
                     queryParameters['select'] = 'id';
@@ -1565,21 +1635,22 @@ var VroomHelper = function () {
                 }
             }
             var xhr = new XHR({
-                    url: UrlHelper.appendQueryStrings(vroomUrl, queryParameters),
+                    url: UrlHelper.appendQueryStrings(apiEndpointUrl, queryParameters),
                     clientId: OneDriveState.clientIds.msaClientId,
                     method: Constants.HTTP_GET,
-                    apiEndpoint: response.apiEndpoint
+                    apiEndpoint: apiEndpoint
                 });
+            Logging.log('performing GET on sharing bundle with id: ' + itemId);
             xhr.start(function (xhr, statusCode) {
                 success(ObjectHelper.deserializeJSON(xhr.responseText));
             }, function (xhr, statusCode, timeout) {
-                error({ error: 'probably comcast\'s fault' });
+                error(statusCode);
             });
         };
         return VroomHelper;
     }();
 module.exports = VroomHelper;
-},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./Logging":17,"./ObjectHelper":18,"./UrlHelper":25}],27:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./UrlHelper":25}],27:[function(_dereq_,module,exports){
 var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), StringHelper = _dereq_('./StringHelper');
 var WindowStateHelper = function () {
         function WindowStateHelper() {
@@ -1594,13 +1665,11 @@ var WindowStateHelper = function () {
             if (windowState === null) {
                 windowState = WindowStateHelper.getWindowState();
             }
-            for (var i = 0; i < values.length; i++) {
-                var value = values[i];
-                var key = value.key;
-                if (windowState[key] !== undefined) {
-                    ErrorHelper.throwError(StringHelper.format('window.name object already has a value for key: \'{0}\'', key));
+            for (var property in values) {
+                if (windowState[property] !== undefined) {
+                    ErrorHelper.throwError(StringHelper.format('window.name object already has a value for key: \'{0}\'', property));
                 }
-                windowState[key] = value.value;
+                windowState[property] = values[property];
             }
             var serializedWindowState = ObjectHelper.serializeJSON(windowState);
             Logging.log('window.name = ' + serializedWindowState);
