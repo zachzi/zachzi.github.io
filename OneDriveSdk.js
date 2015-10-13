@@ -99,6 +99,7 @@ var OneDriveState = function () {
         function OneDriveState() {
         }
         OneDriveState.clearState = function () {
+            window.name = '';
             OneDriveState._sdkReady = true;
         };
         OneDriveState.readyCheck = function () {
