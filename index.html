@@ -2,17 +2,29 @@
     <head>
         <title>Test page for Unified JavaScript Invoker.</title>
         <script>
-            var __extends = (this && this.__extends) || function (d, b) {
-                    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-                    function __() { this.constructor = d; }
-                    __.prototype = b.prototype;
-                    d.prototype = new __();
-                };
+            var od_open_success = function(files) {
+                log("OneDrive.open - success");
+                log(JSON.stringify(files, null, 4));
+            };
 
-            window.__extends = __extends;
+            var od_save_success = function() {
+                log("OneDrive.save - upload succeeded!");
+            };
+
+            var od_save_progress = function(percent) {
+                log("OneDrive.save - progress " + percent + "%");
+            };
+
+            var od_cancel = function() {
+                log("OneDrive.open - user cancel");
+            };
+
+            var od_error = function(errorMessage) {
+                log("OneDrive.open - error " + errorMessage);
+            };
         </script>
         <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-1.9.0.js"></script>
-        <script type="text/javascript" id="onedrive-js"  src="http://localhost:1234/OneDriveSdk.js" client-id="0000000040125824,c599d424-4332-4ccc-8ad0-98121b8f0a18"></script>
+        <script type="text/javascript" id="onedrive-js"  src="OneDriveSdk.js" client-id="0000000040125824,c599d424-4332-4ccc-8ad0-98121b8f0a18"></script>
         <style type="text/css">
             header {
                 color: #094AB1;
@@ -129,32 +141,13 @@
                     var multiSelectChecked = $("#multiSelect")[0].checked;
                     var downloadChecked = $("#downloadLink")[0].checked;
 
-                    var success = function(files) {
-                        log("OneDrive.open - success");
-                        log(JSON.stringify(files, null, 4));
-                    };
-
-                    var cancel = function() {
-                        log("OneDrive.open - user cancel");
-                    };
-
-                    var error = function(errorMessage) {
-                        log("OneDrive.open - error " + errorMessage);
-                    };
-
-                    if (!openInNewWindowChecked) {
-                        window["od_success"] = success;
-                        window["od_cancel"] = cancel;
-                        window["od_error"] = error;
-                    }
-
                     var options = {
                         linkType: downloadChecked ? "downloadLink" : "webLink",
                         multiSelect: multiSelectChecked,
                         openInNewWindow: openInNewWindowChecked,
-                        success: openInNewWindowChecked ? success : "od_success",
-                        cancel: openInNewWindowChecked ? cancel : "od_cancel",
-                        error: openInNewWindowChecked ? error : "od_error"
+                        success: openInNewWindowChecked ? window["od_open_success"] : "od_success",
+                        cancel: openInNewWindowChecked ? window["od_cancel"] : "od_cancel",
+                        error: openInNewWindowChecked ? window["od_error"] : "od_error"
                     };
 
                     OneDrive.open(options);
@@ -182,37 +175,14 @@
                         return;
                     }
 
-                    var success = function() {
-                        log("OneDrive.save - upload succeeded!");
-                    };
-
-                    var cancel = function() {
-                        log("OneDrive.save - user cancel");
-                    };
-
-                    var progress = function(percent) {
-                        log("OneDrive.save - progress " + percent + "%");
-                    };
-
-                    var error = function(errorMessage) {
-                        log("OneDrive.save - error " + errorMessage);
-                    };
-
-                    if (!openInNewWindowChecked) {
-                        window["od_success"] = success;
-                        window["od_cancel"] = cancel;
-                        window["od_progress"] = progress;
-                        window["od_error"] = error;
-                    }
-
                     var options = {
                         file: file,
                         fileName: nameInput.value,
                         openInNewWindow: openInNewWindowChecked,
-                        success: openInNewWindowChecked ? success : "od_success",
-                        cancel: openInNewWindowChecked ? cancel : "od_cancel",
-                        progress: openInNewWindowChecked ? progress : "od_progress",
-                        error: openInNewWindowChecked ? error : "od_error"
+                        success: openInNewWindowChecked ? window["od_save_success"] : "od_success",
+                        progress: openInNewWindowChecked ? window["od_save_progress"] : "od_progress",
+                        cancel: openInNewWindowChecked ? window["od_cancel"] : "od_cancel",
+                        error: openInNewWindowChecked ? window["od_error"] : "od_error"
                     };
 
                     OneDrive.save(options);
