@@ -94,7 +94,7 @@ var OneDriveApp = function () {
         return OneDriveApp;
     }();
 module.exports = OneDriveApp;
-},{"./OneDriveState":4,"./utilities/DomHelper":14,"./utilities/ErrorHelper":15,"./utilities/Logging":17,"./utilities/PickerHelper":19,"./utilities/RedirectHelper":20,"./utilities/ResponseHelper":21,"./utilities/SaverHelper":22}],4:[function(_dereq_,module,exports){
+},{"./OneDriveState":4,"./utilities/DomHelper":15,"./utilities/ErrorHelper":16,"./utilities/Logging":18,"./utilities/PickerHelper":20,"./utilities/RedirectHelper":21,"./utilities/ResponseHelper":22,"./utilities/SaverHelper":23}],4:[function(_dereq_,module,exports){
 var OneDriveState = function () {
         function OneDriveState() {
         }
@@ -198,7 +198,7 @@ var Popup = function () {
         return Popup;
     }();
 module.exports = Popup;
-},{"./utilities/CallbackHelper":13,"./utilities/Logging":17,"./utilities/ResponseHelper":21}],6:[function(_dereq_,module,exports){
+},{"./utilities/CallbackHelper":14,"./utilities/Logging":18,"./utilities/ResponseHelper":22}],6:[function(_dereq_,module,exports){
 var ApiEndpoint = _dereq_('./models/ApiEndpoint'), Constants = _dereq_('./Constants'), ErrorHelper = _dereq_('./utilities/ErrorHelper'), Logging = _dereq_('./utilities/Logging'), ObjectHelper = _dereq_('./utilities/ObjectHelper'), StringHelper = _dereq_('./utilities/StringHelper');
 var DEFAULT_TIMEOUT_MS = 30000;
 var EXCEPTION_STATUS = -1;
@@ -367,7 +367,7 @@ var XHR = function () {
         return XHR;
     }();
 module.exports = XHR;
-},{"./Constants":1,"./models/ApiEndpoint":7,"./utilities/ErrorHelper":15,"./utilities/Logging":17,"./utilities/ObjectHelper":18,"./utilities/StringHelper":23}],7:[function(_dereq_,module,exports){
+},{"./Constants":1,"./models/ApiEndpoint":7,"./utilities/ErrorHelper":16,"./utilities/Logging":18,"./utilities/ObjectHelper":19,"./utilities/StringHelper":24}],7:[function(_dereq_,module,exports){
 var ApiEndpoint;
 (function (ApiEndpoint) {
     ApiEndpoint[ApiEndpoint['filesV2'] = 0] = 'filesV2';
@@ -376,6 +376,17 @@ var ApiEndpoint;
 }(ApiEndpoint || (ApiEndpoint = {})));
 module.exports = ApiEndpoint;
 },{}],8:[function(_dereq_,module,exports){
+var ErrorType;
+(function (ErrorType) {
+    ErrorType[ErrorType['badResponse'] = 0] = 'badResponse';
+    ErrorType[ErrorType['fileReaderFailure'] = 1] = 'fileReaderFailure';
+    ErrorType[ErrorType['popupOpen'] = 2] = 'popupOpen';
+    ErrorType[ErrorType['requestFailure'] = 3] = 'requestFailure';
+    ErrorType[ErrorType['unknown'] = 4] = 'unknown';
+    ErrorType[ErrorType['unsupportedFeature'] = 5] = 'unsupportedFeature';
+}(ErrorType || (ErrorType = {})));
+module.exports = ErrorType;
+},{}],9:[function(_dereq_,module,exports){
 var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Logging = _dereq_('../utilities/Logging'), StringHelper = _dereq_('../utilities/StringHelper'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper');
 var InvokerOptions = function () {
         function InvokerOptions(options) {
@@ -399,7 +410,7 @@ var InvokerOptions = function () {
         return InvokerOptions;
     }();
 module.exports = InvokerOptions;
-},{"../utilities/CallbackHelper":13,"../utilities/Logging":17,"../utilities/StringHelper":23,"../utilities/TypeValidationHelper":24}],9:[function(_dereq_,module,exports){
+},{"../utilities/CallbackHelper":14,"../utilities/Logging":18,"../utilities/StringHelper":24,"../utilities/TypeValidationHelper":25}],10:[function(_dereq_,module,exports){
 var CallbackHelper = _dereq_('../utilities/CallbackHelper'), Constants = _dereq_('../Constants'), InvokerOptions = _dereq_('./InvokerOptions'), Logging = _dereq_('../utilities/Logging'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper');
 var VALID_LINKTYPE_VALUES = [
         Constants.LINKTYPE_DOWNLOAD,
@@ -437,7 +448,7 @@ var PickerOptions = function (_super) {
         return PickerOptions;
     }(InvokerOptions);
 module.exports = PickerOptions;
-},{"../Constants":1,"../utilities/CallbackHelper":13,"../utilities/Logging":17,"../utilities/TypeValidationHelper":24,"./InvokerOptions":8}],10:[function(_dereq_,module,exports){
+},{"../Constants":1,"../utilities/CallbackHelper":14,"../utilities/Logging":18,"../utilities/TypeValidationHelper":25,"./InvokerOptions":9}],11:[function(_dereq_,module,exports){
 var CallbackHelper = _dereq_('../utilities/CallbackHelper'), DomHelper = _dereq_('../utilities/DomHelper'), ErrorHelper = _dereq_('../utilities/ErrorHelper'), InvokerOptions = _dereq_('./InvokerOptions'), Logging = _dereq_('../utilities/Logging'), StringHelper = _dereq_('../utilities/StringHelper'), TypeValidationHelper = _dereq_('../utilities/TypeValidationHelper'), UploadType = _dereq_('./UploadType'), UrlHelper = _dereq_('../utilities/UrlHelper');
 var FORM_UPLOAD_SIZE_LIMIT = 104857600;
 var FORM_UPLOAD_SIZE_LIMIT_STRING = '100 MB';
@@ -536,7 +547,7 @@ var SaverOptions = function (_super) {
         return SaverOptions;
     }(InvokerOptions);
 module.exports = SaverOptions;
-},{"../utilities/CallbackHelper":13,"../utilities/DomHelper":14,"../utilities/ErrorHelper":15,"../utilities/Logging":17,"../utilities/StringHelper":23,"../utilities/TypeValidationHelper":24,"../utilities/UrlHelper":25,"./InvokerOptions":8,"./UploadType":11}],11:[function(_dereq_,module,exports){
+},{"../utilities/CallbackHelper":14,"../utilities/DomHelper":15,"../utilities/ErrorHelper":16,"../utilities/Logging":18,"../utilities/StringHelper":24,"../utilities/TypeValidationHelper":25,"../utilities/UrlHelper":26,"./InvokerOptions":9,"./UploadType":12}],12:[function(_dereq_,module,exports){
 var UploadType;
 (function (UploadType) {
     UploadType[UploadType['dataUrl'] = 0] = 'dataUrl';
@@ -544,7 +555,7 @@ var UploadType;
     UploadType[UploadType['url'] = 2] = 'url';
 }(UploadType || (UploadType = {})));
 module.exports = UploadType;
-},{}],12:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 var Logging = _dereq_('./Logging'), OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper');
 var ACCOUNT_CHOOSER_URL = 'https://onedrive.live.com/picker/accountchooser';
 var AccountChooserHelper = function () {
@@ -580,7 +591,7 @@ var AccountChooserHelper = function () {
         return AccountChooserHelper;
     }();
 module.exports = AccountChooserHelper;
-},{"../OneDriveState":4,"./Logging":17,"./UrlHelper":25}],13:[function(_dereq_,module,exports){
+},{"../OneDriveState":4,"./Logging":18,"./UrlHelper":26}],14:[function(_dereq_,module,exports){
 var OneDriveState = _dereq_('../OneDriveState');
 var CallbackHelper = function () {
         function CallbackHelper() {
@@ -609,7 +620,7 @@ var CallbackHelper = function () {
         return CallbackHelper;
     }();
 module.exports = CallbackHelper;
-},{"../OneDriveState":4}],14:[function(_dereq_,module,exports){
+},{"../OneDriveState":4}],15:[function(_dereq_,module,exports){
 var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper');
 var DOM_CLIENT_ID = 'client-id';
 var DOM_LOGGING_ID = 'disable-logging';
@@ -667,7 +678,7 @@ var DomHelper = function () {
         return DomHelper;
     }();
 module.exports = DomHelper;
-},{"../OneDriveState":4,"./ErrorHelper":15,"./Logging":17,"./StringHelper":23}],15:[function(_dereq_,module,exports){
+},{"../OneDriveState":4,"./ErrorHelper":16,"./Logging":18,"./StringHelper":24}],16:[function(_dereq_,module,exports){
 var Logging = _dereq_('./Logging');
 var ERROR_PREFIX = '[OneDriveSDK Error] ';
 var ErrorHelper = function () {
@@ -691,7 +702,7 @@ var ErrorHelper = function () {
         return ErrorHelper;
     }();
 module.exports = ErrorHelper;
-},{"./Logging":17}],16:[function(_dereq_,module,exports){
+},{"./Logging":18}],17:[function(_dereq_,module,exports){
 var Constants = _dereq_('../Constants'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), StringHelper = _dereq_('./StringHelper'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
 var BATCH_SIZE = 10;
 var FilesV2Helper = function () {
@@ -732,7 +743,8 @@ var FilesV2Helper = function () {
                     }, function (xhr, statusCode, timeout) {
                         errorObjects.push({
                             statusCode: statusCode,
-                            response: xhr.responseText
+                            response: xhr.responseText,
+                            timeout: timeout
                         });
                         invokeCallbacks();
                     });
@@ -757,7 +769,7 @@ var FilesV2Helper = function () {
         return FilesV2Helper;
     }();
 module.exports = FilesV2Helper;
-},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./Logging":17,"./ObjectHelper":18,"./StringHelper":23,"./UrlHelper":25}],17:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./Logging":18,"./ObjectHelper":19,"./StringHelper":24,"./UrlHelper":26}],18:[function(_dereq_,module,exports){
 var LOG_PREFIX = '[OneDriveSDK] ';
 var Logging = function () {
         function Logging() {
@@ -771,7 +783,7 @@ var Logging = function () {
         return Logging;
     }();
 module.exports = Logging;
-},{}],18:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 var Logging = _dereq_('./Logging');
 var ObjectHelper = function () {
         function ObjectHelper() {
@@ -806,8 +818,8 @@ var ObjectHelper = function () {
         return ObjectHelper;
     }();
 module.exports = ObjectHelper;
-},{"./Logging":17}],19:[function(_dereq_,module,exports){
-var AccountChooserHelper = _dereq_('./AccountChooserHelper'), ErrorHelper = _dereq_('./ErrorHelper'), FilesV2Helper = _dereq_('./FilesV2Helper'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), VroomHelper = _dereq_('./VroomHelper');
+},{"./Logging":18}],20:[function(_dereq_,module,exports){
+var AccountChooserHelper = _dereq_('./AccountChooserHelper'), ErrorHelper = _dereq_('./ErrorHelper'), ErrorType = _dereq_('../models/ErrorType'), FilesV2Helper = _dereq_('./FilesV2Helper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), Popup = _dereq_('../Popup'), PickerOptions = _dereq_('../models/PickerOptions'), RedirectHelper = _dereq_('./RedirectHelper'), StringHelper = _dereq_('./StringHelper'), VroomHelper = _dereq_('./VroomHelper');
 var VROOM_THUMBNAIL_SIZES = [
         'large',
         'medium',
@@ -831,7 +843,7 @@ var PickerHelper = function () {
                     });
                 if (!popup.openPopup()) {
                     pickerOptions.error({
-                        errorCode: 1,
+                        errorCode: ErrorType.popupOpen,
                         message: 'popup window is already open'
                     });
                     return;
@@ -858,7 +870,7 @@ var PickerHelper = function () {
                 this._pickerOptions.cancel();
             } else {
                 this._pickerOptions.error({
-                    errorCode: 10,
+                    errorCode: ErrorType.unknown,
                     message: 'something went wrong: ' + errorResponse.error
                 });
             }
@@ -871,10 +883,10 @@ var PickerHelper = function () {
                     webUrl: apiResponse.webUrl,
                     files: options.getWebLinks ? apiResponse.children && apiResponse.children.length > 0 ? apiResponse.children : [apiResponse] : apiResponse.value
                 });
-            }, function (apiError) {
+            }, function (statusCode) {
                 options.error({
-                    errorCode: -1,
-                    message: 'foo'
+                    errorCode: ErrorType.requestFailure,
+                    message: 'web request failed with ' + statusCode
                 });
             });
         };
@@ -883,7 +895,7 @@ var PickerHelper = function () {
             var options = this._pickerOptions;
             if (options.getWebLinks) {
                 options.error({
-                    errorCode: -1,
+                    errorCode: ErrorType.unsupportedFeature,
                     message: 'web link not supported for AAD'
                 });
                 return;
@@ -893,10 +905,11 @@ var PickerHelper = function () {
                     webUrl: null,
                     files: apiResponse
                 });
-            }, function (apiError) {
+            }, function (apiErrors) {
+                Logging.log('request failures: ' + ObjectHelper.serializeJSON(apiErrors));
                 options.error({
-                    errorCode: -1,
-                    message: 'foo'
+                    errorCode: ErrorType.requestFailure,
+                    message: StringHelper.format('\'{0}\' web request(s) failed, see console log for details', apiErrors.length)
                 });
             });
         };
@@ -907,12 +920,13 @@ var PickerHelper = function () {
                     values: []
                 };
             var pickerFiles = response.files;
-            if (!pickerFiles) {
+            if (!pickerFiles || !pickerFiles.length) {
                 options.error({
-                    errorCode: -4,
+                    errorCode: ErrorType.badResponse,
                     message: 'no files returned'
                 });
             }
+            Logging.log(StringHelper.format('returning \'{0}\' files picked', pickerFiles.length));
             for (var i = 0; i < pickerFiles.length; i++) {
                 var file = pickerFiles[i];
                 var thumbnails = [];
@@ -936,7 +950,7 @@ var PickerHelper = function () {
         return PickerHelper;
     }();
 module.exports = PickerHelper;
-},{"../Popup":5,"../models/PickerOptions":9,"./AccountChooserHelper":12,"./ErrorHelper":15,"./FilesV2Helper":16,"./ObjectHelper":18,"./RedirectHelper":20,"./VroomHelper":26}],20:[function(_dereq_,module,exports){
+},{"../Popup":5,"../models/ErrorType":8,"../models/PickerOptions":10,"./AccountChooserHelper":13,"./ErrorHelper":16,"./FilesV2Helper":17,"./Logging":18,"./ObjectHelper":19,"./RedirectHelper":21,"./StringHelper":24,"./VroomHelper":27}],21:[function(_dereq_,module,exports){
 var CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), DomHelper = _dereq_('./DomHelper'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), TypeValidationHelper = _dereq_('./TypeValidationHelper'), UrlHelper = _dereq_('./UrlHelper'), WindowStateHelper = _dereq_('./WindowStateHelper'), XHR = _dereq_('../XHR');
 var AAD_LOGIN_URL = 'https://login.microsoftonline.com/common/oauth2/authorize';
 var DISCOVERY_URL = 'https://onedrive.live.com/picker/businessurldiscovery';
@@ -1035,7 +1049,7 @@ var RedirectHelper = function () {
                     };
                 RedirectHelper.redirect(UrlHelper.appendQueryStrings(AAD_LOGIN_URL, queryParameters), stateValue);
             }, function (xhr, statusCode, timeout) {
-                RedirectHelper._handleError('discover request failed ' + statusCode, inPopupFlow);
+                RedirectHelper._handleError('discover request failed with ' + statusCode, inPopupFlow);
             });
         };
         RedirectHelper._handleAADTenantLoginRedirect = function (queryParameters, inPopupFlow) {
@@ -1121,7 +1135,7 @@ var RedirectHelper = function () {
         return RedirectHelper;
     }();
 module.exports = RedirectHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":13,"./DomHelper":14,"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./TypeValidationHelper":24,"./UrlHelper":25,"./WindowStateHelper":27}],21:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"./CallbackHelper":14,"./DomHelper":15,"./ErrorHelper":16,"./Logging":18,"./ObjectHelper":19,"./TypeValidationHelper":25,"./UrlHelper":26,"./WindowStateHelper":28}],22:[function(_dereq_,module,exports){
 var ApiEndpoint = _dereq_('../models/ApiEndpoint'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging');
 var CID_PADDING = '0000000000000000';
 var CID_PADDING_LENGTH = CID_PADDING.length;
@@ -1205,8 +1219,8 @@ var ResponseHelper = function () {
         return ResponseHelper;
     }();
 module.exports = ResponseHelper;
-},{"../Constants":1,"../models/ApiEndpoint":7,"./ErrorHelper":15,"./Logging":17}],22:[function(_dereq_,module,exports){
-var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
+},{"../Constants":1,"../models/ApiEndpoint":7,"./ErrorHelper":16,"./Logging":18}],23:[function(_dereq_,module,exports){
+var AccountChooserHelper = _dereq_('./AccountChooserHelper'), CallbackHelper = _dereq_('./CallbackHelper'), Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), ErrorType = _dereq_('../models/ErrorType'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), Popup = _dereq_('../Popup'), RedirectHelper = _dereq_('./RedirectHelper'), SaverOptions = _dereq_('../models/SaverOptions'), StringHelper = _dereq_('./StringHelper'), UploadType = _dereq_('../models/UploadType'), UrlHelper = _dereq_('./UrlHelper'), VroomHelper = _dereq_('./VroomHelper'), XHR = _dereq_('../XHR');
 var POLLING_INTERVAL = 1000;
 var POLLING_COUNTER = 5;
 var SaverHelper = function () {
@@ -1230,7 +1244,7 @@ var SaverHelper = function () {
                     });
                 if (!popup.openPopup()) {
                     saverOptions.error({
-                        errorCode: 1,
+                        errorCode: ErrorType.popupOpen,
                         message: 'popup window is already open'
                     });
                     return;
@@ -1254,8 +1268,11 @@ var SaverHelper = function () {
                         ErrorHelper.throwError('incorrect number of folders returned');
                     }
                     _this._executeUpload(saverResponse, folderId);
-                }, function (apiError) {
-                    _this._saverOptions.error(apiError);
+                }, function (statusCode) {
+                    _this._saverOptions.error({
+                        errorCode: ErrorType.requestFailure,
+                        message: 'web request failed with ' + statusCode
+                    });
                 });
                 break;
             case 'aad_picker':
@@ -1278,14 +1295,15 @@ var SaverHelper = function () {
                 this._saverOptions.cancel();
             } else {
                 this._saverOptions.error({
-                    errorCode: 10,
+                    errorCode: ErrorType.unknown,
                     message: 'something went wrong: ' + errorResponse.error
                 });
             }
         };
         SaverHelper.prototype._executeUpload = function (saverResponse, folderId) {
-            var accessToken = saverResponse.accessToken;
             var uploadType = this._saverOptions.uploadType;
+            Logging.log(StringHelper.format('beginning \'{0}\' upload', UploadType[uploadType]));
+            var accessToken = saverResponse.accessToken;
             switch (uploadType) {
             case UploadType.dataUrl:
             case UploadType.url:
@@ -1303,7 +1321,7 @@ var SaverHelper = function () {
             var options = this._saverOptions;
             if (uploadType === UploadType.url && saverResponse.pickerType === 'aad_picker') {
                 options.error({
-                    errorCode: -33,
+                    errorCode: ErrorType.unsupportedFeature,
                     message: 'URL upload not supported for AAD'
                 });
                 return;
@@ -1332,21 +1350,21 @@ var SaverHelper = function () {
                     var location_1 = xhr.getResponseHeader('Location');
                     if (!location_1) {
                         options.error({
-                            errorCode: -1,
-                            message: 'foo'
+                            errorCode: ErrorType.badResponse,
+                            message: 'missing \'Location\' header on response'
                         });
                     }
                     _this._beginPolling(location_1, accessToken);
                 } else {
                     options.error({
-                        errorCode: -1,
-                        message: 'foo'
+                        errorCode: ErrorType.requestFailure,
+                        message: 'web request failed'
                     });
                 }
             }, function (xhr, statusCode, timeout) {
                 options.error({
-                    errorCode: -1,
-                    message: 'foo'
+                    errorCode: ErrorType.requestFailure,
+                    message: 'web request failed with ' + statusCode
                 });
             });
         };
@@ -1361,8 +1379,8 @@ var SaverHelper = function () {
             }
             reader.onerror = function (event) {
                 options.error({
-                    errorCode: -1,
-                    message: 'foo' + event.target.error.name
+                    errorCode: ErrorType.fileReaderFailure,
+                    message: StringHelper.format('failed to read or upload file - error code: \'{0}\', error message: \'{1}\'' + event.target.error.code, event.target.error.message)
                 });
             };
             reader.onload = function (event) {
@@ -1383,8 +1401,8 @@ var SaverHelper = function () {
                     options.success();
                 }, function (xhr, statusCode, timeout) {
                     options.error({
-                        errorCode: -1,
-                        message: 'foo'
+                        errorCode: ErrorType.requestFailure,
+                        message: 'web request failed with ' + statusCode
                     });
                 }, function (xhr, uploadProgress) {
                     options.progress(uploadProgress.progressPercentage);
@@ -1393,6 +1411,7 @@ var SaverHelper = function () {
             reader.readAsArrayBuffer(uploadSource);
         };
         SaverHelper.prototype._beginPolling = function (location, accessToken) {
+            Logging.log('polling for URL upload completion');
             var pollingInterval = POLLING_INTERVAL;
             var pollCount = POLLING_COUNTER;
             var xhrOptions = {
@@ -1425,8 +1444,8 @@ var SaverHelper = function () {
                     }
                 }, function (xhr, statusCode, timeout) {
                     options.error({
-                        errorCode: -1,
-                        message: 'foo'
+                        errorCode: ErrorType.requestFailure,
+                        message: 'web request failed with ' + statusCode
                     });
                 });
             };
@@ -1435,7 +1454,7 @@ var SaverHelper = function () {
         return SaverHelper;
     }();
 module.exports = SaverHelper;
-},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/SaverOptions":10,"../models/UploadType":11,"./AccountChooserHelper":12,"./CallbackHelper":13,"./ErrorHelper":15,"./ObjectHelper":18,"./RedirectHelper":20,"./UrlHelper":25,"./VroomHelper":26}],23:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../Popup":5,"../XHR":6,"../models/ErrorType":8,"../models/SaverOptions":11,"../models/UploadType":12,"./AccountChooserHelper":13,"./CallbackHelper":14,"./ErrorHelper":16,"./Logging":18,"./ObjectHelper":19,"./RedirectHelper":21,"./StringHelper":24,"./UrlHelper":26,"./VroomHelper":27}],24:[function(_dereq_,module,exports){
 var FORMAT_ARGS_REGEX = /[\{\}]/g;
 var FORMAT_REGEX = /\{\d+\}/g;
 var StringHelper = function () {
@@ -1458,7 +1477,7 @@ var StringHelper = function () {
         return StringHelper;
     }();
 module.exports = StringHelper;
-},{}],24:[function(_dereq_,module,exports){
+},{}],25:[function(_dereq_,module,exports){
 var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), StringHelper = _dereq_('./StringHelper');
 var TypeValidationHelper = function () {
         function TypeValidationHelper() {
@@ -1534,7 +1553,7 @@ var TypeValidationHelper = function () {
         return TypeValidationHelper;
     }();
 module.exports = TypeValidationHelper;
-},{"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./StringHelper":23}],25:[function(_dereq_,module,exports){
+},{"./ErrorHelper":16,"./Logging":18,"./ObjectHelper":19,"./StringHelper":24}],26:[function(_dereq_,module,exports){
 var StringHelper = _dereq_('./StringHelper');
 var UrlHelper = function () {
         function UrlHelper() {
@@ -1612,7 +1631,7 @@ var UrlHelper = function () {
         return UrlHelper;
     }();
 module.exports = UrlHelper;
-},{"./StringHelper":23}],26:[function(_dereq_,module,exports){
+},{"./StringHelper":24}],27:[function(_dereq_,module,exports){
 var Constants = _dereq_('../Constants'), ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), OneDriveState = _dereq_('../OneDriveState'), UrlHelper = _dereq_('./UrlHelper'), XHR = _dereq_('../XHR');
 var VroomHelper = function () {
         function VroomHelper() {
@@ -1659,15 +1678,17 @@ var VroomHelper = function () {
                 });
             Logging.log('performing GET on sharing bundle with id: ' + itemId);
             xhr.start(function (xhr, statusCode) {
+                Logging.log('GET on sharing bundle succeeded');
                 success(ObjectHelper.deserializeJSON(xhr.responseText));
             }, function (xhr, statusCode, timeout) {
+                Logging.log('GET on sharing bundle failed');
                 error(statusCode);
             });
         };
         return VroomHelper;
     }();
 module.exports = VroomHelper;
-},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./UrlHelper":25}],27:[function(_dereq_,module,exports){
+},{"../Constants":1,"../OneDriveState":4,"../XHR":6,"./ErrorHelper":16,"./Logging":18,"./ObjectHelper":19,"./UrlHelper":26}],28:[function(_dereq_,module,exports){
 var ErrorHelper = _dereq_('./ErrorHelper'), Logging = _dereq_('./Logging'), ObjectHelper = _dereq_('./ObjectHelper'), StringHelper = _dereq_('./StringHelper');
 var WindowStateHelper = function () {
         function WindowStateHelper() {
@@ -1695,6 +1716,6 @@ var WindowStateHelper = function () {
         return WindowStateHelper;
     }();
 module.exports = WindowStateHelper;
-},{"./ErrorHelper":15,"./Logging":17,"./ObjectHelper":18,"./StringHelper":23}]},{},[2])
+},{"./ErrorHelper":16,"./Logging":18,"./ObjectHelper":19,"./StringHelper":24}]},{},[2])
 (2)
 });
